@@ -1,0 +1,13 @@
+# Local databases and their WAL files
+*.db
+*.db-shm
+*.db-wal
+# Env and key files (never commit secrets)
+.env
+.env.*
+*.env
+*.key
+# Build output
+/xpost
+/bin/
+!.env.example

@@ -1,0 +1,66 @@
+{{define "content"}}<div class="lv" data-live="sched">
+<div class="ph"><div class="grow"><h1>Schedule</h1><div class="sub">{{.Data.Span}}, {{.Data.Zone}}. 15 min minimum between posts per account.{{if .Data.NBlogs}} Blog posts are day banners; their promos never post before the blog is live.{{end}}</div></div>
+<a class="btn pri" href="{{.Data.Compose}}">{{icon "plus"}}New post</a><nav class="seg" aria-label="Week"><a href="{{.Data.PrevHref}}">‹ Prev</a><a class="on" href="{{.Data.ThisHref}}">{{.Data.Range}}</a><a href="{{.Data.NextHref}}">Next ›</a></nav></div>
+<nav class="msub pwk" aria-label="Week"><a href="{{.Data.PrevHref}}" aria-label="Previous week">‹</a><span>{{.Data.Range}}</span><a href="{{.Data.NextHref}}" aria-label="Next week">›</a></nav>
+{{if not .Accounts}}{{template "noaccts"}}{{else}}
+<svg class="xdefs" width="0" height="0" aria-hidden="true" focusable="false"><defs>
+<pattern id="xh-ap" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="7" fill="#2f5fd0" fill-opacity=".16"/></pattern>
+<pattern id="xh-pe" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="7" fill="#a65a06" fill-opacity=".18"/></pattern>
+<pattern id="xh-co" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="7" fill="#c0352d" fill-opacity=".25"/></pattern>
+<pattern id="xh-wb" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="7" fill="#a65a06" fill-opacity=".30"/></pattern>
+<pattern id="xh-po" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="7" fill="#157a3d" fill-opacity=".18"/></pattern>
+</defs></svg>
+<div class="sched">
+<div class="stats">
+{{if .Data.BlogStats}}<div class="card stat"><div class="sect">Blog posts</div><div><span class="v t">{{.Data.NBlogPosts}}</span> <span class="small muted">{{.Data.BlogLine}}</span></div></div>
+<div class="card stat"><div class="sect">Promos</div><div><span class="v t">{{.Data.NPromos}}</span> <span class="small muted">{{.Data.PromoLine}}</span></div></div>
+<div class="card stat{{if .Data.NWait}} warn{{end}}"><div class="sect">Waiting on blog</div><div><span class="v t">{{.Data.NWait}}</span> <span class="small">{{if .Data.FirstWait}}{{.Data.FirstWait}}{{else}}none{{end}}</span></div></div>
+{{if .Data.Conflicts}}<div class="card stat bad"><div class="sect">Spacing conflicts</div><div><span class="v t">{{.Data.Conflicts}}</span> <span class="small">{{.Data.FirstConflict}}</span></div></div>
+{{else}}<div class="card stat"><div class="sect">Next blog</div><div class="small"><b class="t">{{if .Data.NextBlog}}{{.Data.NextBlog}}{{else}}None this week{{end}}</b>{{with .Data.NextBlogNote}} <span class="muted">{{.}}</span>{{end}}</div></div>{{end}}
+{{else}}{{range .Data.Stats}}<div class="card stat"><div class="sect">@{{.Acct.Handle}}</div><div><span class="v t">{{.Items}}</span> <span class="small muted">items · {{.Approved}} approved</span></div></div>{{end}}
+<div class="card stat{{if .Data.Conflicts}} bad{{end}}"><div class="sect">Spacing conflicts</div><div><span class="v t">{{.Data.Conflicts}}</span> <span class="small">{{.Data.FirstConflict}}</span></div></div>
+<div class="card stat"><div class="sect">Next post</div><div class="small"><b>{{if .Data.Next}}{{.Data.Next}}{{else}}None approved{{end}}</b></div></div>{{end}}
+</div>
+<section class="card wk" aria-label="Week">
+<div class="wkh">{{template "schedkind" .Data}}{{template "schedkey" .Data}}<span class="grow"></span><span class="muted small">{{if eq (len .Data.Accts) 2}}Two lanes per day:{{else}}One lane per account:{{end}}{{range $i, $a := .Data.Accts}}{{if $i}},{{end}} <span class="av s {{$a.Color}}">{{$a.Initials}}</span> @{{$a.Handle}}{{end}}</span></div>
+<div class="wrow"><span></span><svg class="wax" width="100%" height="22" aria-hidden="true">{{range .Data.Ticks}}<text x="{{.X}}" y="14" text-anchor="{{.Anchor}}">{{.Label}}</text>{{end}}</svg></div>
+{{range .Data.Days}}<div class="wrow wday{{if .On}} on{{end}}{{if .Today}} today{{end}}"><a class="sdn" href="{{.Href}}#zoom"{{if .On}} aria-current="date"{{end}}><b>{{.Label}}</b>{{if .Today}} <span class="tiny">today</span>{{end}}<span class="sdc">{{.Count}} item{{if ne .Count 1}}s{{end}}{{with .Blogs}} · {{len .}} blog{{end}}</span>{{range $i, $l := .Lanes}}<span class="av s {{$l.Acct.Color}} sla l{{$i}}" aria-hidden="true">{{$l.Acct.Initials}}</span>{{end}}</a>
+{{if .Blogs}}<div class="wtk">{{range .Blogs}}{{template "blogban" .}}{{end}}{{end}}<svg class="trk" width="100%" height="{{$.Data.TrackH}}" role="group" aria-label="{{.Label}}, {{.Count}} item{{if ne .Count 1}}s{{end}}">{{range $.Data.Grid}}<line class="sgl" x1="{{.}}" x2="{{.}}" y1="0" y2="100%"/>{{end}}
+{{range .Lanes}}<rect class="sbase" x="0" y="{{.BaseY}}" width="100%" height="2" rx="1"/>{{$l := .}}{{range .Marks}}<a href="{{.Href}}"><title>{{.Title}}</title><rect class="smk {{.Cls}}" x="{{.X}}" y="{{$l.MY}}" width="{{.W}}" height="20" rx="3" fill="{{.Fill}}"/><rect class="smkb {{.Cls}}" x="{{.X}}" y="{{$l.MY}}" width="4" height="20" rx="1"/></a>{{end}}{{range .Labels}}<a href="{{.Href}}"{{if .Tight}} class="tight"{{end}}><text class="slab" x="{{.X}}" dx="{{.DX}}" y="{{$l.TY}}" text-anchor="{{.Anchor}}">{{.Text}}{{if .Sfx}}<tspan class="sfx{{if .Bad}} bad{{end}}{{if .Wide}} w{{end}}{{if .Wait}} wb{{end}}"> · {{.Sfx}}</tspan>{{end}}</text></a>{{end}}
+{{end}}{{if not .Count}}<text class="sempty" x="0" y="{{.EmptyY}}">No posts scheduled</text>{{end}}</svg>{{if .Blogs}}</div>{{end}}</div>
+{{end}}</section>
+{{with .Data.Zoom}}<section class="card det" id="zoom" aria-label="Zoom">
+<div class="deth"><h3>{{.Title}}</h3>{{if .Empty}}<span class="muted small">No posts scheduled. Pick another day above.</span>{{else}}<span class="muted small">15-minute grid. Each block is a post plus its 15-minute no-post window.</span>{{end}}</div>
+{{if not .Empty}}<div class="wrow zrow"><span></span><svg class="wax" width="100%" height="22" aria-hidden="true">{{range .Ticks}}<text x="{{.X}}" y="14" text-anchor="{{.Anchor}}">{{.Label}}</text>{{end}}</svg></div>
+{{$z := .}}{{range .Lanes}}<div class="wrow zrow dlane"><div class="swho"><span class="av s {{.Acct.Color}}">{{.Acct.Initials}}</span>@{{.Acct.Handle}}</div>
+<svg class="dtrk" width="100%" height="{{.H}}" role="group" aria-label="@{{.Acct.Handle}}">{{range $z.Lines}}<line class="sgl" x1="{{.}}" x2="{{.}}" y1="0" y2="100%"/>{{end}}
+{{range .Brackets}}<line class="sbr" x1="{{.X1}}" x2="{{.X1}}" y1="{{.Y1}}" y2="{{.Y2}}"/><line class="sbr" x1="{{.X2}}" x2="{{.X2}}" y1="{{.Y1}}" y2="{{.Y2}}"/><line class="sbr" x1="{{.X1}}" x2="{{.X2}}" y1="{{.Y2}}" y2="{{.Y2}}"/>{{end}}
+{{range .Cards}}<a href="{{.Href}}"><title>{{.Title}}</title><rect class="scd {{.Cls}}" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="44" rx="7"/>{{if not .Ghost}}<rect class="scdh" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="44" rx="7" fill="{{.Fill}}"/><rect class="scdb {{.Cls}}" x="{{.X}}" y="{{.BY}}" width="3" height="30" rx="1.5"/>{{end}}<text class="scdt{{if .Ghost}} gh{{end}}" x="{{.X}}" dx="10" y="{{.TY}}">{{.Time}}</text><text class="scds{{if .Ghost}} gh{{end}}" x="{{.X}}" dx="10" y="{{.SY}}">{{.Short}}</text></a>{{end}}
+{{range .Texts}}<text class="sgap{{if .Bad}} bad{{end}}" x="{{.X}}" dx="{{.DX}}" y="{{.Y}}" text-anchor="{{.Anchor}}">{{.Text}}{{if .Link}} <a href="{{.Href}}"><tspan class="smv">{{.Link}}</tspan></a>{{end}}</text>{{end}}
+</svg></div>{{end}}{{end}}
+</section>{{end}}
+{{with .Data.Phone}}<section class="pview" aria-label="Day">
+{{template "schedkind" $.Data}}<nav class="pdays" aria-label="Day">{{range $.Data.Days}}<a class="pdc{{if .On}} on{{end}}" href="{{.Href}}"{{if .On}} aria-current="date"{{end}}>{{if .Conflict}}<i aria-label="conflict"></i>{{end}}{{.Short}}<b>{{.Num}}</b><span>{{if .Count}}{{.Count}}{{else}}none{{end}}</span></a>{{end}}</nav>
+{{range $.Data.Sel.Blogs}}{{template "blogban" .}}{{end}}
+{{if .First}}<div class="hint bad mt10"><span><b>{{.Conflicts}} conflict{{if ne .Conflicts 1}}s{{end}}.</b> @{{.First.Acct}} {{.First.Time}} is {{.First.GapMin}} min {{.First.GapRel}} {{.First.GapRef}}. Needs 15.{{if .First.MoveHref}} <a href="{{.First.MoveHref}}"><b>Move to {{.First.MoveShrt}}</b></a>{{end}}</span></div>{{end}}
+{{if .Empty}}<div class="card pempty mt10"><b>{{.Day}}</b><div class="muted small">No posts scheduled.</div></div>{{else}}
+<div class="ptl"><div class="ptlh"><span></span>{{range .Cols}}<span><span class="av s {{.Acct.Color}}">{{.Acct.Initials}}</span>{{.Acct.Handle}}</span>{{end}}</div>
+<div class="ptb"><svg class="pax" width="100%" height="{{.H}}" aria-hidden="true">{{range .Lines}}<text x="100%" dx="-4" y="{{.Y}}" dy="4" text-anchor="end">{{.Label}}</text>{{end}}</svg>
+{{$p := .}}{{range .Cols}}<svg class="pcol" width="100%" height="{{$p.H}}" role="group" aria-label="@{{.Acct.Handle}}">{{range $p.Lines}}<line class="sgl" x1="0" x2="100%" y1="{{.Y}}" y2="{{.Y}}"/>{{end}}
+{{range .Cards}}<rect class="sband" x="0" y="{{.BandY}}" width="100%" height="{{.BandH}}" fill="{{.Fill}}"/><a href="{{.Href}}"><title>{{.Title}}</title><rect class="scd {{.Cls}}" x="4%" y="{{.Y}}" width="92%" height="44" rx="7"/><rect class="scdb {{.Cls}}" x="4%" y="{{.Y}}" width="3" height="44" rx="1.5"/><text class="spct" x="4%" dx="10" y="{{.TY}}"><tspan class="scdt">{{.Clock}}</tspan><tspan class="scds" dx="6">{{.Short}}</tspan></text></a>{{end}}
+</svg>{{end}}</div></div>
+{{template "schedkey" $.Data}}
+{{if .Earlier}}<div class="card plist mt10"><div class="sect">Earlier {{$.Data.Sel.Weekday}}</div>{{range .Earlier}}{{template "schedrow" .}}{{end}}</div>{{end}}
+{{if .Later}}<div class="card plist mt10"><div class="sect">Later {{$.Data.Sel.Weekday}}</div>{{range .Later}}{{template "schedrow" .}}{{end}}</div>{{end}}
+{{end}}</section>{{end}}
+{{end}}
+</div>
+{{end}}
+
+{{define "schedkind"}}{{if .KindChips}}<nav class="seg kseg skind" aria-label="Show">{{range .KindChips}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="true"{{end}}>{{.Label}}</a>{{end}}</nav>{{end}}</div>{{end}}
+
+{{define "schedkey"}}<div class="lgd">{{if .NBlogs}}<span><i class="sw bb"></i>Blog, banner at its publish time</span>{{end}}<span><i class="sw ap"></i>Approved</span><span><i class="sw pe"></i>Pending (posts only if approved)</span><span><i class="sw win"></i>15-min window</span><span><i class="sw co"></i>Conflict</span><span><i class="sw po"></i>Posted</span>{{if .Failed}}<span><i class="sw fa"></i>Failed</span>{{end}}{{if .NWait}}<span><i class="sw wb"></i>Waiting on blog</span>{{end}}</div>{{end}}
+
+{{define "schedrow"}}<a class="prow" href="/drafts/{{.ID}}"><span class="av s {{.Color}}">{{.Initials}}</span><b class="t">{{.Time}}</b><span class="grow">{{.PShort}}</span>{{if .Conflict}}<span class="st failed">conflict</span>{{else if eq .Wait "waiting"}}<span class="st waitblog">waiting on blog</span>{{else if eq .Wait "held"}}<span class="st held">held</span>{{else}}<span class="st {{.Status}}">{{.Status}}</span>{{end}}</a>{{end}}
+
+{{define "blogban"}}<a class="bban {{.St}}{{if .TickX}} btk {{.Pad}}{{end}}" href="{{.Href}}">{{if .TickX}}<svg class="bbtk" width="100%" height="100%" aria-hidden="true" focusable="false"><rect x="{{.TickX}}" y="0" width="3" height="100%" rx="1"/></svg>{{end}}<span class="sa s {{.Color}}" aria-hidden="true">{{icon "doc"}}</span><b class="t">{{.Time}}</b><span class="bbk">Blog · {{brk .Site}}</span><span class="bbt">{{.Title}}</span><span class="st {{.St}}">{{.St}}</span></a>{{end}}

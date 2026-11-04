@@ -1,0 +1,21 @@
+{{define "content"}}{{$c := .Data.Card}}{{$d := $c.D}}
+<a class="crumb crumb-d" href="/queue">{{icon "back"}}Review queue</a>
+{{if $c.Blog}}<div class="ph keep"><div><div class="row"><h1>Reschedule</h1><span class="st {{$c.Blog.St}}">{{$c.Blog.St}}</span></div><div class="sub">Blog · {{$c.Blog.B.Name}} · {{if $d.TokenID}}from {{$d.Source}}{{else}}written by you{{end}}</div></div></div>
+<div class="card pad mw560">
+<div class="btitle">{{$c.Blog.P.Title}}</div><div class="bdesc mb10">{{$c.Blog.P.Description}}</div>
+{{else}}<div class="ph keep"><div><div class="row"><h1>Reschedule</h1><span class="st {{$d.Status}}">{{$d.Status}}</span></div><div class="sub">@{{$d.Account}} · {{$c.PartsLabel}} · {{if $d.TokenID}}from {{$d.Source}}{{else}}written by you{{end}}</div></div></div>
+<div class="card pad mw560">
+{{template "fulltext" $c.Full}}{{end}}
+{{if eq $d.Status "approved"}}<div class="hint warn mb10">{{icon "warn"}}<span>Moving an approved post sends it back to Pending unless you use Reschedule and approve.</span></div>{{end}}
+{{if eq $d.Status "failed"}}<div class="hint warn mb10">{{icon "warn"}}<span>Moving a failed post puts it back in Pending unless you use Reschedule and approve.</span></div>{{end}}
+<form method="post" action="/drafts/{{$d.ID}}/reschedule">
+<input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{.Data.V}}">
+<button class="vh" name="op" value="check" tabindex="-1" aria-hidden="true">Check</button>
+{{template "whenpanel" .Data}}
+{{if .Data.Editable}}<div class="row wrap mt14 rsacts">
+<a class="btn" href="/queue">Cancel</a><span class="grow"></span>
+<button class="btn" name="op" value="move">{{if or (eq $d.Status "approved") (eq $d.Status "failed")}}Move, back to pending{{else}}Move{{end}}</button>
+<button class="btn pri" name="op" value="approve">{{icon "check"}}Reschedule and approve</button>
+</div>{{end}}
+</form></div>
+{{end}}

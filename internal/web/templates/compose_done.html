@@ -1,0 +1,13 @@
+{{define "content"}}{{$c := .Data.Card}}{{$d := $c.D}}
+<a class="crumb crumb-d" href="/queue">{{icon "back"}}Review queue</a>
+<div class="ph"><div class="grow"><h1>New post</h1><div class="sub">Written by you, so it counts as approved when you schedule it.</div></div></div>
+<div class="card cdone" role="status">
+<div class="done"><span class="big">{{icon "check"}}</span><h2>{{if .Data.Approved}}{{.Data.Heading}}{{else}}This post is {{$d.Status}}{{end}}</h2><div class="muted dsub">{{.Data.Date}}</div></div>
+<div class="card dsum"><div class="row g8"><span class="av {{$c.Acct.Color}}">{{$c.Acct.Initials}}</span><div class="grow mw0"><div class="handle">@{{$d.Account}}</div><div class="muted small">{{if .Data.Mine}}Written by you{{else}}from {{$d.Source}}{{end}}</div></div><span class="st {{$d.Status}}">{{$d.Status}}</span></div>
+<p class="preview">{{$c.Preview}}</p>
+<div class="dchipr"><span class="chip">{{icon "thread"}}{{$c.PartsLabel}}</span>{{if $c.Images}}<span class="chip">{{icon "img"}}{{$c.Images}} image{{if ne $c.Images 1}}s{{end}}</span>{{end}}{{if $c.HasURL}}<span class="chip linkchip">{{icon "link"}}Link</span>{{end}}<span class="chip t">{{icon "dollar"}}est. {{$c.Cost}}</span></div>
+</div>
+{{template "lanepreview" .Data.Lane}}
+<div class="dacts"><a class="btn pri" href="{{.Data.Schedule}}">{{icon "cal"}}View in Schedule</a><a class="btn" href="{{.Data.Another}}">{{icon "plus"}}Write another</a><a class="btn" href="/queue">Back to Review queue</a></div>
+</div>
+{{end}}

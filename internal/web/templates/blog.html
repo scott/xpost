@@ -1,0 +1,39 @@
+{{define "content"}}{{$c := .Data.Card}}{{$d := $c.D}}{{$b := $c.Blog}}
+<a class="crumb crumb-d" href="/queue?kind=blog">{{icon "back"}}Review queue</a>
+<div class="ph keep pvh"><div class="grow"><h1>Preview</h1><div class="sub">Rendered from the submitted Markdown. Links and raw HTML are sanitized.</div></div></div>
+<div class="pvm">{{template "blogav" $b.B}}<b>{{brk $b.B.Name}}</b><span class="muted small"> · {{$c.When.Day}}{{if $c.When.Time}} {{$c.When.Time}}{{end}}</span><span class="grow"></span><span class="st {{$b.St}}">{{$b.St}}</span></div>
+<div class="pvg">
+<article class="card pva">
+<h1 class="pvt">{{$b.P.Title}}</h1>
+<div class="pvd">{{.Data.Date}}</div>
+<p class="pvs">{{$b.P.Description}}</p>
+{{if $b.P.Cover}}<figure class="pvc">{{template "blogcover" $b}}<figcaption>{{if $b.P.Cover.Alt}}Cover alt text: {{$b.P.Cover.Alt}}{{else}}No alt text for the cover yet.{{end}}</figcaption></figure>{{end}}
+{{if $b.Imported}}<div class="hint neutral mt10">{{icon "info"}}<span>Imported from {{$b.B.Name}}. xpost keeps only the title, description, date and link: the text stays on the site.</span></div>{{else}}<div class="pvb">{{.Data.Body}}</div>
+<div class="pve">End of post · {{$b.Words}}</div>{{end}}
+</article>
+<aside class="pvside">
+<section class="card pad pvst">
+<div class="bhead">{{template "blogav" $b.B}}<div class="grow"><div class="bk"><span class="kind">Blog</span></div><div class="site">{{brk $b.B.Name}}</div></div><span class="st {{$b.St}}">{{$b.St}}</span></div>
+<div class="sect mt12">{{if eq $d.Status "posted"}}Published{{else if eq $d.Status "rejected"}}Was for{{else}}Publishes{{end}}</div><div class="pvwhen t">{{$c.When.Day}}{{if $c.When.Time}} · {{$c.When.Time}} {{$c.When.Zone}}{{end}}</div>
+<div class="pvacts">{{template "blogacts" $c}}</div>
+</section>
+{{template "lintbox" $c}}
+{{if and (eq $d.Status "failed") $b.Blocked}}<div class="errbox blocked" role="alert">{{icon "warn"}}<div class="grow"><b>Blocked at {{$b.FailedAt}}: the slug is taken. Nothing was published.</b> {{$d.Error}} Edit the slug, then approve again.</div></div>{{else if eq $d.Status "failed"}}<div class="errbox" role="alert">{{icon "warn"}}<div class="grow"><b>Publish failed at {{$b.FailedAt}}. Nothing is live.</b> {{$d.Error}}</div></div>{{end}}
+{{if and (eq $d.Status "posted") $b.P.PublishedURL}}<div class="okbox" role="status">{{icon "globe"}}<div class="grow"><b>{{if $b.Imported}}Published on {{$b.Published}}.</b> Imported from the site; the text stays there.{{else}}Published at {{$b.Published}}.</b>{{if $b.LiveAt}} Live check passed at {{$b.LiveAt}}.{{end}}{{if $b.Adopted}} Matched to the live post by import.{{end}}{{end}}<div class="purl"><a href="{{$b.P.PublishedURL}}" target="_blank" rel="noopener noreferrer">{{$b.P.PublishedURL}}</a></div></div></div>{{end}}
+<section class="card pad"><h2>Details</h2>
+<dl class="pvdl"><dt>Slug</dt><dd class="kbd">/{{$b.P.Slug}}</dd><dt>Words</dt><dd class="t">{{if $b.Imported}}<span class="muted">Not kept</span>{{else}}{{$b.Words}} · {{$b.Mins}} min{{end}}</dd>
+<dt>Tags</dt><dd>{{if $b.P.Tags}}{{range $i, $t := $b.P.Tags}}{{if $i}}, {{end}}{{$t}}{{end}}{{else}}<span class="muted">None</span>{{end}}</dd>
+<dt>Cover alt</dt><dd>{{if $b.P.Cover}}{{if $b.P.Cover.Alt}}{{$b.P.Cover.Alt}}{{else}}<span class="muted">Not set</span>{{end}}{{else}}<span class="muted">No cover</span>{{end}}</dd>
+{{if not $b.Imported}}<dt>Lint</dt><dd class="{{if eq $b.LintClass "ok2"}}lok{{else if eq $b.LintClass "bad2"}}lbad{{else}}lwn{{end}}">{{if eq $b.LintClass "ok2"}}Passed{{else}}{{$b.LintLabel}}{{end}}</dd>{{end}}</dl>
+</section>
+<section class="card pad" id="history"><h2>History</h2>
+<ul class="bhist">{{range .Data.History}}<li{{if .Cur}} class="cur"{{end}}><span class="hd" aria-hidden="true"></span><span>{{.Text}} · {{.When}}</span></li>{{end}}</ul>
+</section>
+</aside>
+</div>
+<div class="pvbar">{{if eq $d.Status "pending"}}<form method="post" action="/drafts/{{$d.ID}}/approve"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$c.Ret}}"><button class="btn pri"{{if or $b.Off $c.Blocked}} disabled aria-disabled="true"{{end}}>{{icon "check"}}Approve</button></form>
+{{else if and (eq $d.Status "failed") (not $b.Blocked)}}<form method="post" action="/drafts/{{$d.ID}}/publish"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$c.Ret}}"><button class="btn pri"{{if or $b.Off $b.PubOff}} disabled aria-disabled="true"{{end}}>{{icon "retry"}}Retry publish</button></form>
+{{else if and (eq $d.Status "posted") $b.P.PublishedURL}}<a class="btn pri" href="{{$b.P.PublishedURL}}" target="_blank" rel="noopener noreferrer">{{icon "ext"}}View live post</a>{{end}}
+{{if or (eq $d.Status "pending") (eq $d.Status "approved") (eq $d.Status "failed")}}<a class="btn" href="/drafts/{{$d.ID}}/edit">{{icon "edit"}}Edit</a><a class="btn" href="/drafts/{{$d.ID}}/reschedule">{{icon "clock"}}Reschedule</a>{{else}}<a class="btn" href="/queue?kind=blog">{{icon "back"}}Queue</a>{{end}}
+</div>
+{{end}}

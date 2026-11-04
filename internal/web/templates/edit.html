@@ -1,0 +1,57 @@
+{{define "content"}}{{$csrf := .CSRF}}{{$d := .Data.D}}{{$ed := .Data.Editable}}
+<a class="crumb crumb-d" href="/queue">{{icon "back"}}Review queue</a>
+<div class="ph keep"><div><div class="row"><h1>Edit draft</h1><span class="st {{$d.Status}}">{{$d.Status}}</span><span class="mono muted">#d-{{$d.ID}}</span></div>
+<div class="sub">@{{$d.Account}} · {{if gt .Data.NParts 1}}thread of {{.Data.NParts}}{{else}}single post{{end}} · {{if $d.TokenID}}proposed by {{$d.Source}}{{else}}written by you{{end}}</div></div></div>
+{{if .Data.Approved}}<div class="hint warn banner">{{icon "warn"}}<span><b>Saving sends this back to Pending.</b> It is approved for {{.Data.Orig.Day}} at {{.Data.Orig.Time}} {{.Data.Orig.Zone}}. Any change takes it off the schedule until you approve it again, or use Save and approve.</span></div>{{end}}
+{{if not $ed}}<div class="hint neutral banner">{{icon "info"}}<span>This draft is {{$d.Status}}, so it can't be edited.{{if $d.RejectReason}} Reason: {{$d.RejectReason}}{{end}}</span></div>{{end}}
+{{if $d.Note}}<div class="hint neutral banner">{{icon "info"}}<span>Note from {{$d.Source}}: {{$d.Note}}</span></div>{{end}}
+<form method="post" action="/drafts/{{$d.ID}}" enctype="multipart/form-data" data-edit data-limit="{{.Data.Limit}}" class="{{if not $ed}}ro{{end}}">
+<input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="v" value="{{.Data.V}}"><input type="hidden" name="parts" value="{{.Data.NParts}}">
+<button class="vh" name="op" value="check" tabindex="-1" aria-hidden="true">Recount</button>
+<div class="egrid">
+<div>
+{{$n := .Data.NParts}}{{$max := .Data.Max}}{{$acct := .Data.Acct}}
+{{range .Data.Parts}}{{$i := .I}}
+<section class="card part{{if .Over}} over{{end}}" data-part="{{.N}}">
+<div class="phd"><span class="av s {{$acct.Color}}">{{$acct.Initials}}</span><b>Part {{.N}} of {{$n}}</b><span class="muted small plabel">{{.Label}}</span>
+{{if $ed}}<span class="tools">{{if not .First}}<button class="btn ghost" name="op" value="up:{{$i}}">Move up</button>{{end}}{{if gt $n 1}}<button class="btn ghost danger" name="op" value="rmpart:{{$i}}">Remove</button>{{end}}</span>{{end}}</div>
+<label class="vh" for="text_{{$i}}">Part {{.N}} text</label>
+<textarea id="text_{{$i}}" name="text_{{$i}}" rows="4"{{if not $ed}} readonly{{end}}>{{.Text}}</textarea>
+<input type="hidden" name="media_{{$i}}" value="{{len .Media}}">
+<div class="pfoot">
+<div class="imgs">
+{{range $j, $m := .Media}}<div class="img"><img class="th" src="/media/{{$m.Ref}}" alt="{{if $m.Alt}}{{$m.Alt}}{{else}}Image {{inc $j}} of part {{inc $i}}{{end}}">
+<input type="hidden" name="mid_{{$i}}_{{$j}}" value="{{$m.ID}}"><input type="hidden" name="mref_{{$i}}_{{$j}}" value="{{$m.Ref}}">
+<label class="vh" for="alt_{{$i}}_{{$j}}">Alt text</label><input class="alt" type="text" id="alt_{{$i}}_{{$j}}" name="alt_{{$i}}_{{$j}}" value="{{$m.Alt}}" placeholder="Alt text (optional)" maxlength="1000"{{if not $ed}} readonly{{end}}>
+{{if $ed}}<button class="btn rm" name="op" value="rmimg:{{$i}}:{{$j}}" aria-label="Remove image {{inc $j}}">{{icon "x"}}Remove</button>{{end}}</div>{{end}}
+{{if and $ed .CanAdd}}<label class="add">{{icon "img"}}Add<input type="file" name="add_{{$i}}" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label>{{end}}
+</div>
+<div class="counter{{if .Over}} over{{end}}" data-counter><span class="ring p{{.Ring}}"></span><span class="t" data-n>{{.Count}} / 280</span><span class="note">{{if .Over}}{{.Over}} over. CJK and emoji count 2 each.{{else if .URLs}}Links count as 23{{else}}{{end}}</span></div>
+</div>
+{{if .Over}}<div class="hint bad mt10">{{icon "warn"}}<span>Part {{.N}} is over the 280 limit. Trim it or split it into a new part before saving.</span></div>{{end}}
+</section>
+{{end}}
+{{if and $ed .Data.CanAddPart}}<button class="btn" name="op" value="addpart">{{icon "plus"}}Add part</button>{{end}}
+<p class="tiny muted mt8">Up to 4 images per part · PNG, JPEG, GIF, WebP · 5 MB each · a GIF goes on its own. Alt text is sent to X with the image. Counter uses X weighting: links count 23, CJK and emoji count 2. New images upload when you press any button.</p>
+</div>
+<div class="eside">
+<section class="card side-p"><h2>When</h2>{{template "whenpanel" .Data}}</section>
+<section class="card side-p"><h2>Estimated cost</h2>
+<div class="costrow"><div class="small">{{range .Data.CostLines}}<div>{{.N}} {{.Label}}{{if ne .N 1}}s{{end}} × {{.Rate}}</div>{{end}}</div><b class="t">{{.Data.Cost}}</b></div>
+<p class="tiny muted mt8">{{if .Data.RatesKnown}}Rates from the server config; check them against console.x.com.{{else}}Cost rates are not configured on this server, so this is unverified.{{end}}{{if .Data.UploadUnverified}} The image upload rate is not set, so this draft waits until it is.{{end}}{{if .Data.AltUnverified}} The alt text rate is not set, so this draft waits until it is.{{end}}</p></section>
+<section class="card side-p"><h2>History</h2><ul class="hist">{{range .Data.Events}}<li><span>{{.What}} · {{.Who}} · {{.At}}</span></li>{{end}}</ul></section>
+</div>
+</div>
+{{if $ed}}<div class="card savebar">
+{{if .Data.Deletable}}<button class="btn ghost danger del-d" form="del">Delete draft</button>{{end}}
+<span class="sp"></span>
+<span class="why" data-why>{{if .Data.FirstOver}}Fix part {{.Data.FirstOver}} to save{{end}}</span>
+<button class="btn recount" name="op" value="check">Recount</button>
+<a class="btn cancel-d" href="/queue">Cancel</a>
+<span class="kbdhint" data-kbd-hint="to save" hidden>Ctrl+Enter to save</span>
+<button class="btn" data-primary-submit name="op" value="save" data-save{{if .Data.FirstOver}} disabled{{end}}>{{if .Data.Approved}}Save, back to pending{{else}}Save{{end}}</button>
+<button class="btn pri" name="op" value="approve" data-save{{if .Data.FirstOver}} disabled{{end}}>{{icon "check"}}Save and approve</button>
+</div>{{end}}
+</form>
+{{if .Data.Deletable}}<form id="del" method="post" action="/drafts/{{$d.ID}}/delete" data-confirm="Delete this draft? This can't be undone."><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="v" value="{{.Data.V}}"><button class="btn danger mt12{{if $ed}} del-m{{end}}">Delete draft</button></form>{{end}}
+{{end}}

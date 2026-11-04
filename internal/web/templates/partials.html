@@ -1,0 +1,41 @@
+{{define "av"}}<span class="av {{.Color}}">{{.Initials}}</span>{{end}}
+
+{{define "whenpanel"}}{{/* .When .Slots .Spacing .Conflicts .ZoneName */}}
+<div class="when-in">
+<div><label class="f" for="date">Date</label><input type="date" id="date" name="date" value="{{.When.Date}}"{{if not .Editable}} disabled{{end}}></div>
+<div><label class="f" for="time">Time</label><input type="time" id="time" name="time" step="900" value="{{.When.Clock}}"{{if not .Editable}} disabled{{end}}></div>
+</div>
+<div class="tiny muted mt6">{{.ZoneName}} ({{.When.Zone}})</div>
+{{if .Editable}}{{if .Slots}}<div class="sect mt12">Free slots</div>
+<div class="slots">{{range .Slots}}<button class="btn{{if .Taken}} taken{{end}}{{if .On}} on{{end}}" name="op" value="slot:{{.Clock}}"{{if .Taken}} disabled aria-label="{{.Label}} taken"{{end}}>{{.Label}}</button>{{end}}</div>{{end}}{{end}}
+{{if .Conflicts}}{{range .Conflicts}}<div class="hint {{if .Blocking}}warn{{else}}neutral{{end}} mt8">{{icon "warn"}}<span>{{.Msg}}{{if .MoveLabel}} Next free: {{.MoveLabel}}.{{end}}</span></div>{{end}}
+{{else if not .NoSpacing}}<div class="hint neutral mt8">{{icon "check"}}<span>{{.Spacing}} Spacing OK.</span></div>{{end}}
+{{end}}
+
+{{define "lanepreview"}}{{/* laneView: two hours of one account's lane */}}
+<div class="sect lanet">{{.Title}}</div>
+<svg class="clane" width="100%" height="78" role="img" aria-label="{{.Aria}}">
+<defs><pattern id="cl-h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.5" height="6" fill="#2f5fd0" fill-opacity=".18"/></pattern>
+<pattern id="cl-hb" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.5" height="6" fill="#c0352d" fill-opacity=".28"/></pattern></defs>
+<rect class="cl-trk" x="0" y="20" width="100%" height="22" rx="6"/>
+{{range .Grid}}<line class="cl-gl" x1="{{.}}" x2="{{.}}" y1="20" y2="42"/>{{end}}
+{{range .Wins}}<rect class="cl-win{{if eq .Cls "co"}} co{{end}}" x="{{.X}}" y="20" width="{{.W}}" height="22"/>{{end}}
+{{if .Now}}<line class="cl-now" x1="{{.Now}}" x2="{{.Now}}" y1="14" y2="48"/>{{end}}
+{{range .Items}}<svg x="{{.X}}" y="0" overflow="visible"><rect class="cl-mk {{.Cls}}" x="{{if eq .Cls "me"}}-3{{else if eq .Cls "gh"}}-4{{else}}-2{{end}}" y="16" width="{{if eq .Cls "me"}}6{{else if eq .Cls "gh"}}8{{else}}4{{end}}" height="30" rx="2"/></svg>{{end}}
+{{range .Ticks}}<text class="cl-tk" x="{{.X}}" y="56" text-anchor="{{.Anchor}}">{{.Text}}</text>{{end}}
+{{range .Up}}<text class="cl-lb {{.Cls}}" x="{{.X}}" y="11" text-anchor="{{.Anchor}}">{{.Text}}</text>{{end}}
+{{range .Down}}<text class="cl-lb {{.Cls}}" x="{{.X}}" y="72" text-anchor="{{.Anchor}}">{{.Text}}</text>{{end}}
+</svg>
+{{if not .NoKey}}<div class="capk lanek"><span><i class="k-ap"></i>Approved</span>{{if .Posted}}<span><i class="k-po"></i>Posted</span>{{end}}{{if .Pending}}<span><i class="k-pe"></i>Pending</span>{{end}}<span><i class="k-me"></i>This post</span>{{if .Conflict}}<span><i class="k-co"></i>Conflict</span>{{end}}{{if .Now}}<span><i class="k-now"></i>Now</span>{{end}}<span><i class="k-win"></i>15-min window</span></div>{{end}}
+{{end}}
+{{define "fulltext"}}{{/* []fullPart: every part in full, line breaks kept */}}<div class="ptext">{{range .}}<div class="ppart">{{if .Label}}<span class="pn">{{.Label}}</span>{{end}}<p class="pbody">{{template "segs" .}}</p></div>{{end}}</div>{{end}}
+{{define "segs"}}{{if .Segs}}{{range .Segs}}{{if eq .K "add"}}<ins>{{.T}}</ins>{{else if eq .K "del"}}<del>{{.T}}</del>{{else if eq .K "blink"}}<span class="blink">{{icon "link"}}blog link</span>{{else}}{{.T}}{{end}}{{end}}{{else}}{{.Text}}{{end}}{{end}}
+
+{{define "replyquote"}}{{/* replyView: the post a reply answers, as the agent sent it */}}{{if .R.Available}}<div class="oq"><div class="lb">{{icon "reply"}}Replying to</div>
+<div class="hd"><span class="oav" aria-hidden="true">{{.Initials}}</span><span class="nm">{{.Name}}</span><span class="hn">@{{.Handle}}</span></div>
+<div class="tx">{{.Text}}</div>
+<div class="ft">{{if .Rel}}<span class="t">{{.Rel}} · {{.Abs}}</span>{{end}}{{if .Example}}<span class="ex">Example</span>{{end}}<span class="grow"></span>{{if .ViewURL}}<a class="vx" href="{{.ViewURL}}" target="_blank" rel="noopener noreferrer">View on X{{icon "ext"}}</a>{{end}}</div></div>
+{{else}}<div class="oq na"><div class="lb">{{icon "reply"}}Replying to</div><div class="nai">{{icon "warn"}}<div><b>Original post unavailable.</b> It may have been deleted, or X did not return it. Last tried <span class="t">{{.Tried}}</span>.<div class="tiny muted mono">Post ID {{.R.InReplyTo}}</div></div></div>
+{{if .RetryForm}}<form class="retry" method="post" action="/drafts/{{.RetryID}}/retry-load"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{.RetryV}}"><input type="hidden" name="return" value="{{.Ret}}"><button class="btn">{{icon "retry"}}Retry load</button></form>{{end}}</div>{{end}}{{end}}
+
+{{define "noaccts"}}<div class="hint neutral qnote" role="status" data-noaccts>{{icon "info"}}<span>No X accounts yet, so nothing can be drafted or posted. <a href="/settings/accounts">Add one in Settings &gt; X accounts</a>.</span></div>{{end}}

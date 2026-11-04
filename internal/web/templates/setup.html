@@ -1,0 +1,9 @@
+{{define "content"}}<div class="steps" aria-hidden="true"><span class="on"></span><span></span></div>
+<h1>Set up xpost</h1><p class="muted small">For {{.Data.Email}}. Step 1 of 2: choose a password (at least {{.Data.Min}} characters). Then add a passkey.</p>
+<form method="post" action="/setup/{{.Data.Token}}">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+<input type="email" name="email" value="{{.Data.Email}}" autocomplete="username" hidden>
+<label class="f" for="password">New password</label><input type="password" id="password" name="password" autocomplete="new-password" minlength="{{.Data.Min}}" required autofocus>
+<label class="f" for="confirm">Repeat it</label><input type="password" id="confirm" name="confirm" autocomplete="new-password" minlength="{{.Data.Min}}" required>
+<button class="btn pri">Continue</button>
+</form>{{end}}

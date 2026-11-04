@@ -1,0 +1,39 @@
+{{define "content"}}{{$csrf := .CSRF}}{{$d := .Data.D}}{{$ed := .Data.Editable}}{{$rp := .Data.R}}
+<a class="crumb crumb-d" href="/queue">{{icon "back"}}Review queue</a>
+<div class="ph keep"><div><div class="row"><h1>Edit reply</h1><span class="kp">{{icon "reply"}}Reply</span><span class="st {{$d.Status}}">{{$d.Status}}</span><span class="mono muted">#d-{{$d.ID}}</span></div>
+<div class="sub">@{{$d.Account}} · reply · {{if $d.TokenID}}proposed by {{$d.Source}}{{else}}written by you{{end}} · posts by hand on X</div></div></div>
+{{if .Data.Approved}}<div class="hint warn banner">{{icon "warn"}}<span><b>Saving sends this back to Pending.</b> Approve it again from the queue to open it on X.</span></div>{{end}}
+{{if not $ed}}<div class="hint neutral banner">{{icon "info"}}<span>This reply is {{$d.Status}}, so it can't be edited.{{if $d.RejectReason}} Reason: {{$d.RejectReason}}{{end}}</span></div>{{end}}
+{{if $d.Note}}<div class="hint neutral banner">{{icon "info"}}<span>Note from {{$d.Source}}: {{$d.Note}}</span></div>{{end}}
+<form method="post" action="/drafts/{{$d.ID}}" data-edit data-limit="{{.Data.Limit}}" class="{{if not $ed}}ro{{end}}">
+<input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="v" value="{{.Data.V}}"><input type="hidden" name="parts" value="1"><input type="hidden" name="media_0" value="0">
+<button class="vh" name="op" value="check" tabindex="-1" aria-hidden="true">Recount</button>
+<div class="egrid">
+<div>
+<div class="rsticky">{{template "replyquote" $rp}}</div>
+<section class="card part{{if .Data.Over}} over{{end}}" data-part="1">
+<div class="phd"><span class="av s {{.Data.Acct.Color}}">{{.Data.Acct.Initials}}</span><b>Reply from @{{$d.Account}}</b></div>
+<label class="vh" for="text_0">Reply text</label>
+<textarea id="text_0" name="text_0" rows="5"{{if not $ed}} readonly{{end}}>{{.Data.Text}}</textarea>
+<div class="pfoot"><span class="tiny muted grow">X counts links as 23. Limit 280.</span>
+<div class="counter{{if .Data.Over}} over{{end}}" data-counter><span class="ring p{{.Data.Ring}}"></span><span class="t" data-n>{{.Data.Count}} / 280</span><span class="note">{{if .Data.Over}}{{.Data.Over}} over. CJK and emoji count 2 each.{{else if .Data.URLs}}Links count as 23{{end}}</span></div></div>
+{{if .Data.Over}}<div class="hint bad mt10">{{icon "warn"}}<span>{{.Data.Over}} over the 280 limit. You can save it, but Approve stays off until it fits.</span></div>{{end}}
+</section>
+</div>
+<div class="eside">
+<section class="card side-p"><h2>Checks</h2><ul class="rchecks">{{range .Data.Checks}}<li class="{{.Level}}">{{if eq .Level "ok"}}{{icon "check"}}{{else}}{{icon "warn"}}{{end}}<span>{{.Msg}}</span></li>{{end}}</ul></section>
+<section class="card side-p"><h2>History</h2><ul class="hist">{{range .Data.Events}}<li><span>{{.What}} · {{.Who}} · {{.At}}</span></li>{{end}}</ul></section>
+</div>
+</div>
+{{if $ed}}<div class="card savebar">
+{{if .Data.Deletable}}<button class="btn ghost danger del-d" form="del">Delete reply</button>{{end}}
+<span class="sp"></span>
+<span class="why">Saving keeps it in Pending.</span>
+<button class="btn recount" name="op" value="check">Recount</button>
+<a class="btn cancel-d" href="/queue">Cancel</a>
+<span class="kbdhint" data-kbd-hint="to save" hidden>Ctrl+Enter to save</span>
+<button class="btn pri" name="op" value="save" data-primary-submit>{{if .Data.Approved}}Save, back to pending{{else}}Save{{end}}</button>
+</div>{{end}}
+</form>
+{{if .Data.Deletable}}<form id="del" method="post" action="/drafts/{{$d.ID}}/delete" data-confirm="Delete this reply? This can't be undone."><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="v" value="{{.Data.V}}"><button class="btn danger mt12{{if $ed}} del-m{{end}}">Delete reply</button></form>{{end}}
+{{end}}

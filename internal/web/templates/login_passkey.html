@@ -1,0 +1,6 @@
+{{define "content"}}<div class="steps" aria-hidden="true"><span class="on"></span><span class="on"></span></div>
+<h1>Confirm with your passkey</h1><p class="muted small">Step 2 of 2. Approving posts needs both your password and your passkey.</p>
+<button type="button" class="btn pri" data-passkey-login data-csrf="{{.CSRF}}" disabled>{{icon "key"}}Use passkey</button>
+<p class="small mt10 badtxt" data-passkey-msg role="status"></p>
+<form class="mt6" method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="linkbtn small">Start over</button></form>
+{{end}}

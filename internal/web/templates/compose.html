@@ -1,0 +1,82 @@
+{{define "content"}}{{$v := .Data}}{{$st := $v.St}}
+<a class="crumb crumb-d" href="{{$v.Back}}">{{icon "back"}}{{$v.BackLabel}}</a>
+<div class="ph"><div class="grow"><h1>New post</h1><div class="sub">Written by you, so it counts as approved when you schedule it.</div></div></div>
+{{if $v.Confirm}}<div class="hint warn banner ccfm" role="alert">{{icon "warn"}}<span class="grow">Discard this post? What you wrote is not saved.</span><a class="btn danger" href="{{$v.Back}}">Discard</a><button class="btn" form="cf" name="op" value="check">Keep editing</button></div>{{end}}
+<form id="cf" method="post" action="/compose" enctype="multipart/form-data" data-edit data-compose data-limit="{{$v.Limit}}" data-warn="260" data-back="{{$v.Back}}">
+<input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="nonce" value="{{$st.Nonce}}"><input type="hidden" name="from" value="{{$st.From}}">
+<input type="hidden" name="mode" value="{{$st.Mode}}"><input type="hidden" name="slot" value="{{$st.Slot}}"><input type="hidden" name="active" value="{{$st.Active}}"><input type="hidden" name="parts" value="{{$v.NParts}}">
+<button class="vh" name="op" value="check" tabindex="-1" aria-hidden="true">Check</button>
+<div class="cg">
+<div class="cmain">
+<section class="card cblk">
+<div class="lbl cdesk">Account</div>
+<div class="acct" role="radiogroup" aria-label="Account">{{range $v.Accts}}<label><input type="radio" name="acct" value="{{.Handle}}"{{if .On}} checked{{end}} data-refresh><span class="av s {{.Color}}">{{.Initials}}</span><span class="ah">@{{.Handle}}</span><span class="radio"></span></label>{{end}}</div>
+<div class="lbl mt14 cdesk">Format</div>
+<div class="seg2 cfmt" role="group" aria-label="Format"><button name="op" value="fmt:single" class="{{if not $v.Thread}}on{{end}}" aria-pressed="{{if $v.Thread}}false{{else}}true{{end}}">Single post</button><button name="op" value="fmt:thread" class="{{if $v.Thread}}on{{end}}" aria-pressed="{{if $v.Thread}}true{{else}}false{{end}}">{{icon "thread"}}Thread</button></div>
+</section>
+{{range $v.Parts}}
+<div class="cpart{{if or .Open (not $v.Thread)}} open{{end}}" data-cpart="{{.I}}">
+{{if $v.Thread}}<button class="card coll" name="op" value="open:{{.I}}" data-open="{{.I}}" aria-label="Edit part {{.N}}"><b class="small">Part {{.N}}</b><span class="cprev muted small">{{.Preview}}</span>{{if .Link}}<span class="chip linkchip">{{icon "link"}}{{$v.LinkRate}}</span>{{end}}<span class="counter mini{{if .Over}} over{{else if .Warn}} warn{{end}}" data-mini><span class="ring p{{.Ring}}"></span><b class="t">{{.Count}}</b></span></button>{{end}}
+<section class="card part{{if .Over}} over{{end}}" data-part="{{.N}}" data-imgs="{{len .Media}}">
+{{if not .First}}<span class="conn" aria-hidden="true"></span>{{end}}
+<div class="phd"><span class="av s {{$v.Acct.Color}}">{{$v.Acct.Initials}}</span><b>{{if $v.Thread}}Part {{.N}} of {{$v.NParts}}{{else}}Post{{end}}</b>{{if $v.Thread}}<span class="muted small">{{.Role}}</span>{{end}}{{if .Link}}<span class="chip linkchip">{{icon "link"}}Link · {{$v.LinkRate}}</span>{{end}}
+<span class="tools">{{if not .First}}<button class="btn ghost danger" name="op" value="rmpart:{{.I}}" aria-label="Remove part {{.N}}">Remove</button>{{end}}</span></div>
+<label class="vh" for="text_{{.I}}">{{if $v.Thread}}Part {{.N}} text{{else}}Post text{{end}}</label>
+<textarea id="text_{{.I}}" name="text_{{.I}}" rows="4" placeholder="{{if .First}}Write your post{{else}}Write part {{.N}}{{end}}">{{.Text}}</textarea>
+<input type="hidden" name="media_{{.I}}" value="{{len .Media}}">
+{{$i := .I}}{{range $j, $m := .Media}}<div class="imgrow"><img class="th" src="/media/{{$m.Ref}}" alt="{{if $m.Alt}}{{$m.Alt}}{{else}}Image {{inc $j}} of part {{inc $i}}{{end}}">
+<input type="hidden" name="mid_{{$i}}_{{$j}}" value="{{$m.ID}}"><input type="hidden" name="mref_{{$i}}_{{$j}}" value="{{$m.Ref}}">
+<div class="altw"><label class="k" for="alt_{{$i}}_{{$j}}">Alt text</label><input class="alt" type="text" id="alt_{{$i}}_{{$j}}" name="alt_{{$i}}_{{$j}}" value="{{$m.Alt}}" placeholder="Describe this image" maxlength="1000"></div>
+<button class="ib rmimg" name="op" value="rmimg:{{$i}}:{{$j}}" aria-label="Remove image {{inc $j}}">{{icon "x"}}</button></div>{{end}}
+<div class="ptools">{{if .CanAdd}}<label class="btn addimg">{{icon "img"}}Image <span class="muted t">{{len .Media}}/{{$v.Max}}</span><input type="file" name="add_{{.I}}" accept="image/png,image/jpeg,image/gif,image/webp" multiple data-refresh aria-label="Add images to {{if $v.Thread}}part {{.N}}{{else}}the post{{end}}"></label>{{else}}<span class="btn dis" aria-disabled="true">{{icon "img"}}Image <span class="muted t">{{len .Media}}/{{$v.Max}}</span></span>{{end}}
+<div class="counter{{if .Over}} over{{else if .Warn}} warn{{end}}" data-counter><span class="ring p{{.Ring}}"></span><span class="t" data-n>{{.Count}} / {{$v.Limit}}</span><span class="note">{{if .Over}}{{.Over}} over{{else if .Count}}{{.Left}} left{{end}}</span></div></div>
+{{if .Over}}<div class="hint bad mt10">{{icon "warn"}}<span>{{.Over}} over. CJK and emoji count 2 each. Trim it, or <button class="linkbtn" name="op" value="split:{{.I}}">split into a new part</button>.</span></div>{{end}}
+</section></div>
+{{end}}
+{{if and $v.Thread $v.CanAddPart}}<button class="btn caddp" name="op" value="addpart">{{icon "plus"}}Add part</button>{{end}}
+<p class="small muted mt10">Up to 4 images per part, each with alt text. PNG, JPEG, GIF, WebP, 5 MB each; a GIF goes on its own. Links count 23, CJK and emoji count 2.<span class="nojs"> New images upload when you press any button.</span></p>
+</div>
+<div class="cside">
+<details class="card cpanel cwhen" open{{if and $v.Spacing (not $v.Conflict) (not $v.TimeError) (not $v.PendingWarn)}} data-ok{{end}}>
+<summary class="wsum"><span class="wsl"><b class="t">{{if $v.SlotLabel}}{{$v.SlotLabel}} {{$v.Zone}}{{else}}Pick a time{{end}}</b><span class="tiny muted">{{$v.Spacing}}</span></span>{{icon "chev"}}</summary>
+<h3>When</h3>
+<div class="seg2" role="group" aria-label="When"><button name="op" value="mode:next" class="{{if eq $st.Mode "next"}}on{{end}}" aria-pressed="{{if eq $st.Mode "next"}}true{{else}}false{{end}}">{{icon "clock"}}Next free slot</button><button name="op" value="mode:pick" class="{{if eq $st.Mode "pick"}}on{{end}}" aria-pressed="{{if eq $st.Mode "pick"}}true{{else}}false{{end}}">{{icon "cal"}}Pick a time</button></div>
+{{if eq $st.Mode "next"}}<div class="field slotf mt10"><span class="t">{{if $v.SlotLabel}}{{$v.SlotLabel}}{{else}}No free slot this week{{end}}</span><span class="muted">{{$v.Zone}}</span></div>
+{{else}}<div class="when-in mt10"><div><label class="vh" for="date">Date</label><input type="date" id="date" name="date" value="{{$st.Date}}" data-refresh{{if or $v.Conflict $v.TimeError}} class="bad"{{end}}></div>
+<div><label class="vh" for="time">Time</label><input type="time" id="time" name="time" step="60" value="{{$st.Clock}}" data-refresh{{if or $v.Conflict $v.TimeError}} class="bad"{{end}}></div></div>{{end}}
+<div class="tiny muted mt6">{{$v.ZoneName}} ({{$v.Zone}})</div>
+{{with $v.Lane}}{{template "lanepreview" .}}{{end}}
+{{if $v.TimeError}}<div class="hint bad mt8">{{icon "warn"}}<span>{{$v.TimeError}}.</span></div>
+{{else if $v.Conflict}}<div class="hint bad mt8 cfix">{{icon "warn"}}<span class="grow">{{$v.Conflict}}</span>{{if $v.UseDate}}<button class="btn use" name="op" value="use:{{$v.UseDate}}T{{$v.UseClock}}">Use {{$v.UseLabel}}</button>{{end}}</div>
+{{end}}{{if and $v.PendingWarn (not $v.TimeError)}}<div class="hint warn mt8 cpend">{{icon "warn"}}<span>{{$v.PendingWarn}}</span></div>{{else if and $v.Spacing (not $v.Conflict) (not $v.TimeError)}}<div class="hint neutral mt8">{{icon "check"}}<span>{{$v.Spacing}}</span></div>{{end}}
+</details>
+<section class="card cpanel ccost"><h3 class="cdesk">Cost</h3>
+<div class="citems">{{range $v.Items}}<div class="costl"><span{{if .Link}} class="lk"{{end}}>{{.Label}}</span><span class="t">{{.Amount}}</span></div>{{end}}</div>
+<div class="costl tot"><span>Estimated cost</span><span class="t">{{$v.Total}}</span></div>
+{{if $v.Summary}}<div class="muted small csum">{{$v.Summary}}</div>{{end}}
+{{if and $v.Empty $v.RateLine}}<div class="muted tiny mt6">{{$v.RateLine}}</div>{{end}}
+{{if $v.CostNote}}<div class="muted tiny mt6">{{$v.CostNote}}</div>{{end}}
+{{if $v.LinkTip}}<div class="hint warn mt10">{{icon "warn"}}<span>{{$v.LinkTip}}</span></div>{{end}}
+{{with $v.Cap}}{{if .Show}}<div class="capm">
+{{if .Over}}<div class="small capover">Over the {{.Cap}} monthly cap{{if .Month}} for {{.Month}}{{end}} by <span class="t">{{.Over}}</span></div>{{else}}<div class="small"><b class="t">{{.Left}}</b> left of the <b class="t">{{.Cap}}</b> monthly cap{{if .Month}} for {{.Month}}{{end}} after this post</div>{{end}}
+<svg class="capbar" width="100%" height="10" role="img" aria-label="Spent {{.Spent}} and scheduled {{.Sched}} of the {{.Cap}} cap">{{range .Bars}}<rect class="{{.Cls}}" x="{{.X}}" y="0" width="{{.W}}" height="10"/>{{end}}</svg>
+<div class="capk"><span><i class="ksp"></i>Spent {{.Spent}}</span><span><i class="ksc"></i>Scheduled {{.Sched}}</span>{{if .Example}}<span class="ex">Example data</span>{{end}}</div>
+{{if .Over}}<div class="hint bad mt10">{{icon "warn"}}<span>This post needs {{.Need}} and only {{.Room}} is left {{if .Month}}for {{.Month}}{{else}}this month{{end}}. {{if .Tip}}{{.Tip}}, or <a href="/settings"><b>raise the cap in Settings</b></a>.{{else}}<a href="/settings"><b>Raise the cap in Settings</b></a>, or save it as a draft.{{end}}</span></div>{{end}}
+</div>{{end}}{{end}}
+{{if and $v.CostBlock (ne $v.CostBlock "over")}}<div class="hint warn mt10">{{icon "warn"}}<span>{{$v.CostBlock}}</span></div>{{end}}
+</section>
+<p class="tiny muted cfoot-m">Save as draft sends it to the Review queue as Pending.</p>
+</div>
+</div>
+<div class="card cbar">
+<button class="btn cbar-c" name="op" value="cancel" data-cancel>Cancel</button>
+<span class="grow"></span>
+<span class="reason" data-why>{{$v.Reason}}</span>
+<button class="btn recount" name="op" value="check">Check</button>
+<span class="kbdhint" data-kbd-hint="to save as draft" hidden>Ctrl+Enter to save as draft</span>
+<button class="btn" data-primary-submit name="op" value="draft" data-save data-gate="draft" data-other="{{$v.DraftOther}}"{{if $v.DraftBlock}} disabled{{end}}>Save as draft</button>
+<button class="btn pri" name="op" value="schedule" data-save data-gate="schedule" data-other="{{$v.Other}}" data-tail="{{$v.OtherTail}}"{{if $v.SchedBlock}} disabled{{end}}>{{icon "check"}}Schedule</button>
+</div>
+<p class="tiny muted cfoot">Save as draft sends it to the Review queue as Pending.</p>
+</form>
+{{end}}

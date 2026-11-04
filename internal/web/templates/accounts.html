@@ -1,0 +1,31 @@
+{{define "content"}}
+<div class="ph"><div><h1>X accounts</h1><div class="sub">Each xpost account connects to the X account of the same name. Tokens are encrypted on this server and refresh on their own.</div></div></div>
+{{template "settabs" "accounts"}}
+{{if not .Data.Enabled}}<div class="hint warn mb10" data-xoff>{{icon "warn"}}<span><b>Connecting is off.</b> This server has no X client id. Set <span class="mono">{{.Data.EnvID}}</span> and <span class="mono">{{.Data.EnvSecret}}</span> (or <span class="mono">{{.Data.EnvSecretFile}}</span>) in the server's environment and restart. Register this callback URL in the X developer console: <span class="mono brk">{{.Data.Callback}}</span></span></div>{{end}}
+{{$csrf := .CSRF}}{{$on := .Data.Enabled}}
+{{range .Data.Rows}}{{$c := .Conn}}<section class="card pad mb10 xacct" data-account="{{.A.Handle}}"><div class="row wrap g10">
+<span class="av {{.A.Color}}">{{.A.Initials}}</span><div class="grow mw0"><div class="handle">@{{.A.Handle}}</div><div class="small muted">{{.Pending}} pending draft{{if ne .Pending 1}}s{{end}}</div></div>
+{{if not $c}}<span class="row small muted g6 nowrap"><span class="dot"></span>Not connected</span>
+{{else if eq $c.Status "reconnect"}}<span class="row small g6 nowrap warnt"><span class="dot warn"></span>Needs reconnect</span>
+{{else}}<span class="row small g6 nowrap okt"><span class="dot on"></span>Connected</span>{{end}}
+</div>
+{{if not $c}}
+<div class="hint neutral mt12">{{icon "info"}}<span>Not connected, so nothing can post to @{{.A.Handle}}. Connect opens X to sign in as @{{.A.Handle}} and approve read, write and media access.</span></div>
+<div class="xacts mt12">{{if $on}}<form method="post" action="/settings/accounts/{{.A.Handle}}/connect"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn pri">{{icon "at"}}Connect @{{.A.Handle}}</button></form>
+{{else}}<button class="btn" disabled aria-disabled="true">{{icon "at"}}Connect @{{.A.Handle}}</button><span class="tiny muted">Needs an X client id on the server</span>{{end}}</div>
+{{else}}
+<dl class="kv mt12"><dt>X account</dt><dd>@{{$c.XUsername}} <span class="muted">(id {{$c.XUserID}})</span></dd>
+<dt>Connected</dt><dd>{{.Since}}</dd><dt>Last refresh</dt><dd>{{.Refresh}}</dd>
+<dt>Access</dt><dd class="chips0">{{range splitScopes $c.Scope}}<span class="chip">{{.}}</span> {{end}}</dd></dl>
+{{if eq $c.Status "reconnect"}}<div class="hint bad mt12">{{icon "warn"}}<span>xpost can no longer refresh this token{{if $c.LastError}}: {{$c.LastError}}{{end}}. Nothing can post to @{{.A.Handle}} until you reconnect.</span></div>{{end}}
+<div class="xacts mt12">
+{{if eq $c.Status "reconnect"}}{{if $on}}<form method="post" action="/settings/accounts/{{.A.Handle}}/connect"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn pri">{{icon "at"}}Reconnect</button></form>{{else}}<button class="btn" disabled aria-disabled="true">Reconnect</button>{{end}}
+{{else if $on}}<form method="post" action="/settings/accounts/{{.A.Handle}}/check"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn">{{icon "check"}}Check connection</button></form>{{end}}
+<form method="post" action="/settings/accounts/{{.A.Handle}}/disconnect" data-confirm="Disconnect @{{.A.Handle}}? xpost revokes its tokens at X and deletes them here."><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn danger">Disconnect</button></form>
+</div>
+{{end}}
+</section>{{end}}
+{{if not .Data.Rows}}<div class="hint neutral mb10" data-noaccts>{{icon "info"}}<span><b>No X accounts yet.</b> Add the X handle you post as, then connect it. Agents can propose drafts only for accounts added here.</span></div>{{end}}
+<form class="card pad mb10 row wrap g10" method="post" action="/settings/accounts" data-addacct><input type="hidden" name="csrf" value="{{$csrf}}"><label class="f m0 grow mw0" for="ahandle">Add an X account<input type="text" id="ahandle" name="handle" maxlength="16" placeholder="example_user" autocomplete="off" spellcheck="false" required></label><button class="btn pri">{{icon "at"}}Add account</button></form>
+<p class="tiny muted mt10">Access requested: {{.Data.Scopes}}. Callback URL: <span class="mono brk">{{.Data.Callback}}</span></p>
+{{end}}

@@ -1,0 +1,74 @@
+{{define "head"}}<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>{{.Title}} · xpost</title>
+<link rel="stylesheet" href="/static/xpost.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<script src="/static/xpost.js" defer></script>
+{{if .Live}}<script src="/static/live.js" defer></script>{{end}}
+</head>{{end}}
+
+{{define "app"}}{{template "head" .}}<body>
+<div class="d">
+<aside class="side">
+<a class="brand" href="/queue"><span class="lg">xp</span>xpost{{if .Demo}}<span class="ex mla">Example data</span>{{end}}</a>
+<a class="btn pri newpost" href="/compose{{if eq .Nav "schedule"}}?from=schedule{{end}}">{{icon "plus"}}New post</a>
+<nav class="nav" aria-label="Main" data-live="nav">
+<a href="/queue"{{if eq .Nav "queue"}} class="on" aria-current="page"{{end}}>{{icon "inbox"}}Review queue{{if .Pending}}<span class="cnt t">{{.Pending}}</span>{{end}}</a>
+<a href="/schedule"{{if eq .Nav "schedule"}} class="on" aria-current="page"{{end}}>{{icon "cal"}}Schedule</a>
+<a href="/log"{{if eq .Nav "log"}} class="on" aria-current="page"{{end}}>{{icon "log"}}Log &amp; spend</a>
+<a href="/settings"{{if eq .Nav "settings"}} class="on" aria-current="page"{{end}}>{{icon "gear"}}Settings</a>
+<a href="/security"{{if eq .Nav "security"}} class="on" aria-current="page"{{end}}>{{icon "key"}}Security &amp; passkeys</a>
+</nav>
+{{if .Accounts}}<div class="accts"><div class="sect">Accounts</div>
+{{range .Accounts}}<div class="row"><span class="av s {{.Color}}">{{.Initials}}</span><span class="grow">@{{.Handle}}</span>{{if eq .XStatus "connected"}}<span class="dot on" title="Connected to X"></span>{{else if eq .XStatus "reconnect"}}<span class="dot warn" title="Needs reconnect"></span>{{else}}<span class="dot" title="Not connected"></span>{{end}}</div>{{end}}
+</div>{{end}}
+{{if .Blogs}}<div class="accts blogs"><div class="sect">Blogs</div>
+{{range .Blogs}}<a class="row" href="/queue?kind=blog"><span class="sa s {{.Color}}" aria-hidden="true">{{icon "doc"}}</span><span class="grow">{{.Name}}</span>{{if eq .TestState "passed"}}<span class="dot on" title="Ready: last test passed"></span>{{else if eq .TestState "failed"}}<span class="dot bad" title="Test failed"></span>{{else}}<span class="dot" title="Untested"></span>{{end}}</a>{{end}}
+</div>{{end}}
+<div class="foot"><div class="row g8">{{icon "lock"}}<span>Owner session · passkey</span></div>
+<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="linkbtn">Sign out</button></form></div>
+</aside>
+<div class="col">
+<header class="mh">
+{{if .CancelForm}}<button class="mcancel" form="{{.CancelForm}}" name="op" value="cancel" formnovalidate data-cancel>Cancel</button>{{else if .Back}}<a class="ib" href="{{.Back}}" aria-label="Back">{{icon "back"}}</a>{{else}}<a class="logo" href="/queue">xpost</a>{{end}}
+<h1>{{.Title}}</h1>
+{{if .Demo}}<span class="ex">Example</span>{{end}}
+{{if .NewPost}}<a class="ib plus" href="{{.NewPost}}" aria-label="New post">{{icon "plus"}}</a>{{end}}
+<a class="ib" href="#more" aria-label="Account and more">{{if .User}}<span class="av">{{initial .User.DisplayName}}</span>{{end}}</a>
+</header>
+<main class="main" id="main"{{if .Live}} data-live-page="{{.Live}}" data-live-seq="{{.LiveSeq}}"{{if .LiveDraft}} data-live-draft="{{.LiveDraft}}" data-live-v="{{.LiveV}}"{{end}}{{end}}>
+{{if .Flash}}<div class="hint ok flash" role="status">{{icon "check"}}<span>{{.Flash}}</span></div>{{end}}
+{{if .Error}}<div class="hint bad flash" role="alert">{{icon "warn"}}<span>{{.Error}}</span></div>{{end}}
+{{template "content" .}}
+</main>
+</div>
+</div>
+<nav class="tabs" aria-label="Main" data-live="tabs">
+<a class="tab{{if eq .Nav "queue"}} on{{end}}" href="/queue"{{if eq .Nav "queue"}} aria-current="page"{{end}}><span class="e">{{icon "inbox"}}{{if .Pending}}<b class="n t">{{.Pending}}</b>{{end}}</span><span>Queue</span></a>
+<a class="tab{{if eq .Nav "schedule"}} on{{end}}" href="/schedule"{{if eq .Nav "schedule"}} aria-current="page"{{end}}><span class="e">{{icon "cal"}}</span><span>Schedule</span></a>
+<a class="tab{{if eq .Nav "log"}} on{{end}}" href="/log"{{if eq .Nav "log"}} aria-current="page"{{end}}><span class="e">{{icon "log"}}</span><span>Log</span></a>
+<a class="tab{{if or (eq .Nav "settings") (eq .Nav "security")}} on{{end}}" href="#more"><span class="e">{{icon "menu"}}</span><span>More</span></a>
+</nav>
+<div id="more" class="sheet-wrap"><a class="scrim" href="#_" tabindex="-1" aria-label="Close More"></a>
+<div class="sheet" role="dialog" aria-labelledby="more-title"><div class="grab"></div>
+<h2 id="more-title">More</h2>
+<div class="slist">
+<a href="/settings">{{icon "gear"}}Settings</a>
+<a href="/security">{{icon "key"}}Security &amp; passkeys</a>
+</div>
+<hr>
+{{if .User}}<div class="who"><span class="av s">{{initial .User.DisplayName}}</span>{{.User.Email}} · owner session · passkey</div>{{end}}
+<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="sout">{{icon "out"}}Sign out</button></form>
+<a class="btn wfull mt6" href="#_">Close</a>
+</div></div>
+</body></html>{{end}}
+
+{{define "auth"}}{{template "head" .}}<body>
+<div class="authwrap"><div class="card authcard">
+<div class="brand"><span class="lg">xp</span>xpost{{if .Demo}}<span class="ex mla">Example data</span>{{end}}</div>
+{{if .Error}}<div class="hint bad flash" role="alert">{{icon "warn"}}<span>{{.Error}}</span></div>{{end}}
+{{template "content" .}}
+</div></div>
+</body></html>{{end}}

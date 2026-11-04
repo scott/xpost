@@ -1,0 +1,121 @@
+{{define "blogav"}}<span class="sa {{.Color}}" aria-hidden="true">{{icon "doc"}}</span>{{end}}
+
+{{define "blogcover"}}{{/* blogView */}}{{if .P.Cover}}<img class="cover" src="/media/{{.P.Cover.Ref}}" alt="{{.CoverLabel}}" width="1200" height="630">{{end}}{{end}}
+
+{{define "blogchips"}}{{/* blogView */}}<div class="chips">
+{{if .Imported}}<span class="chip">{{icon "import"}}Imported</span><span class="chip kbd">/{{.P.Slug}}</span>{{else}}<span class="chip t">{{icon "doc"}}{{.Words}}</span><span class="chip t">{{.Mins}} min read</span><span class="chip kbd">/{{.P.Slug}}</span>
+<span class="chip {{.LintClass}}">{{if eq .LintClass "ok2"}}{{icon "check"}}{{else}}{{icon "warn"}}{{end}}{{.LintLabel}}</span>{{end}}
+</div>{{end}}
+
+{{define "lintbox"}}{{/* cardView with Blog */}}{{$b := .Blog}}{{if and $b.ShowLint $b.Findings}}
+<div class="lint{{if not $b.NErr}} lwarn{{end}}" role="{{if $b.NErr}}alert{{else}}status{{end}}"><h4>{{icon "warn"}}{{$b.LintHead}}</h4>
+{{range $b.Findings}}<div class="lf"><span class="lsev {{.Sev}}">{{.Label}}</span><div class="grow">{{.Msg}}<span class="lq">{{.Before}}<mark{{if eq .Sev "w"}} class="w"{{end}}>{{.Hit}}</mark>{{.After}}</span></div></div>{{end}}
+{{if ne .D.Status "posting"}}<a class="btn fixb" href="/drafts/{{.D.ID}}/edit">{{icon "edit"}}Fix in editor</a>{{end}}
+</div>{{end}}{{end}}
+
+{{define "blogacts"}}{{/* cardView with Blog, CSRF, Ret */}}{{$d := .D}}{{$b := .Blog}}
+{{if and $b.Off (or (eq $d.Status "pending") (eq $d.Status "approved") (eq $d.Status "failed"))}}<div class="blocked">{{if $b.Untested}}{{$b.B.Name}} cannot publish until its last test passes. <a href="/settings/blogs?open={{$b.B.ID}}#blog-{{$b.B.ID}}">Test this blog in Settings before publishing.</a>{{else}}{{$b.Off}}{{end}}</div>{{else if and .Blocked (eq $d.Status "pending")}}<div class="blocked">{{.Blocked}}</div>{{end}}
+<div class="acts6">
+{{if eq $d.Status "pending"}}<form class="apf" method="post" action="/drafts/{{$d.ID}}/approve"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{.Ret}}"><button class="btn pri"{{if or $b.Off .Blocked}} disabled aria-disabled="true"{{end}}>{{icon "check"}}Approve</button></form>{{end}}
+{{$wait := and .RW (eq .RW.State "waiting")}}{{if or (eq $d.Status "pending") (eq $d.Status "approved")}}{{if or $b.Off $b.PubOff $wait}}<span class="btn dis" aria-disabled="true"{{if $wait}} title="{{.Blocked}}"{{else if $b.PubOff}} title="{{$b.PubOff}}"{{end}}>{{icon "bolt"}}Publish now</span>{{else}}<a class="btn" href="{{$b.PubHref}}">{{icon "bolt"}}Publish now</a>{{end}}{{end}}
+{{if or (eq $d.Status "pending") (eq $d.Status "approved") (eq $d.Status "failed")}}
+{{if $wait}}<span class="btn dis" aria-disabled="true" title="{{.Blocked}}">{{icon "edit"}}Edit</span>{{else}}<a class="btn" href="/drafts/{{$d.ID}}/edit">{{icon "edit"}}Edit</a>{{end}}
+{{if .CanRewrite}}{{if .RwOff}}<span class="btn rwb dis" aria-disabled="true" title="{{.RwOff}}">{{icon "rewrite"}}Rewrite</span>{{else}}<a class="btn rwb{{if .RwOpen}} on{{end}}" href="{{.RwHref}}"{{if .RwOpen}} aria-expanded="true"{{end}}>{{icon "rewrite"}}Rewrite</a>{{end}}{{end}}
+<a class="btn" href="/drafts/{{$d.ID}}/reschedule">{{icon "clock"}}Reschedule</a>
+<details class="rej"><summary class="btn danger">{{icon "x"}}Reject</summary>
+<form class="rejform" method="post" action="/drafts/{{$d.ID}}/reject"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{.Ret}}">
+{{if $wait}}<p class="tiny muted">Rejecting also cancels the rewrite request.</p>{{end}}<label class="small" for="reason{{$d.ID}}">Reason (optional{{if $d.TokenID}}, the agent can read it{{end}})</label><textarea id="reason{{$d.ID}}" name="reason" maxlength="500" rows="2"></textarea>
+<button class="btn danger" data-primary-submit>Reject post</button></form></details>
+{{else if eq $d.Status "posting"}}<div class="small muted pubing"><span class="spin" aria-hidden="true"></span>Publishing now. Nothing to do until it resolves.</div>
+{{else if eq $d.Status "posted"}}
+{{if $b.P.PublishedURL}}<a class="btn pri wide" href="{{$b.P.PublishedURL}}" target="_blank" rel="noopener noreferrer">{{icon "ext"}}View live post</a>{{end}}
+<a class="btn" href="/drafts/{{$d.ID}}#history">{{icon "log"}}Log</a>
+{{else}}
+<form method="post" action="/drafts/{{$d.ID}}/delete" data-confirm="Delete this blog post? This can't be undone."><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{.Ret}}"><button class="btn danger">Delete</button></form>
+<a class="btn" href="/drafts/{{$d.ID}}">View</a>
+{{end}}
+</div>{{end}}
+
+{{define "pubconfirm"}}{{/* cardView with Blog: the Publish now confirm */}}{{$d := .D}}{{$b := .Blog}}
+<a class="pscrim" href="{{$b.PubClose}}" aria-label="Close"></a><form class="pubdlg" method="post" action="/drafts/{{$d.ID}}/publish" role="dialog" aria-modal="true" aria-labelledby="pt{{$d.ID}}">
+<input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{.Ret}}">
+<span class="grab" aria-hidden="true"></span><h3 id="pt{{$d.ID}}">Publish this post now?</h3>
+<div class="pctx">{{template "blogav" $b.B}}<div class="grow"><b>{{$b.P.Title}}</b><div class="tiny muted">{{$b.B.Name}} · was set for {{.When.Day}}, {{.When.Time}}</div></div></div>
+<ul class="plines"><li>{{icon "bolt"}}<span>Publishes right away and replaces the scheduled slot.</span></li>{{if $b.Promos}}<li>{{icon "thread"}}<span>Promo posts keep their offset from the new time and post after you approve them.</span></li>{{end}}<li>{{icon "globe"}}<span>Goes live on the public site.</span></li>{{if eq $b.B.Method "api"}}<li>{{icon "info"}}<span>Marked Published only after xpost finds the live page on {{$b.B.Name}}.</span></li>{{end}}</ul>
+<div class="pact"><a class="btn" href="{{$b.PubClose}}">Cancel</a><button class="btn pri" autofocus>{{icon "bolt"}}Publish now</button></div>
+</form>{{end}}
+
+{{define "rwpill"}}{{/* cardView: the rewrite state pill on a blog card */}}{{$rw := .RW}}{{$a := .Agent}}{{if $rw}}{{if eq $rw.State "waiting"}}<span class="st rewriting">rewriting</span>{{else if eq $rw.State "revised"}}<span class="st revised">{{icon "rewrite"}}revised by {{$a.Name}}</span>{{else if eq $rw.State "late"}}<span class="st norw">no rewrite yet</span>{{end}}{{end}}{{end}}
+
+{{define "blogcard"}}{{/* cardView with Blog */}}{{$d := .D}}{{$b := .Blog}}{{$a := .Agent}}{{$rw := .RW}}
+<article class="card bq{{if $rw}}{{if eq $rw.State "late"}} rwc-late{{else if or (eq $rw.State "waiting") (eq $rw.State "revised")}} rwc{{end}}{{end}}{{if $b.NErr}}{{if $b.ShowLint}} badc{{end}}{{else if eq $d.Status "failed"}} badc{{else if eq $d.Status "posted"}} okc{{end}}" id="d{{$d.ID}}">
+<div class="bmain">
+<div class="bhead">{{template "blogav" $b.B}}<div class="grow"><div class="bk"><span class="kind">Blog</span><span class="site">{{brk $b.B.Name}}</span></div>
+<div class="src">{{if $b.Imported}}Imported from the site{{else if $a}}<span class="agav s {{$a.Color}}" aria-hidden="true">{{$a.Initial}}</span>from {{$a.Name}}{{else if $d.TokenID}}from {{$d.Source}}{{else}}Written by you{{end}}{{if ne $d.Status "posted"}}<span class="rcv"> · received {{.Received}}</span>{{end}}</div></div>
+<span class="bpills">{{template "rwpill" .}}{{if not (and $rw (eq $rw.State "waiting"))}}<span class="st {{$b.St}} bst">{{if $b.Blocked}}blocked{{else}}{{$b.St}}{{end}}</span>{{end}}</span><div class="btime-m">{{if .When.Time}}<b class="t">{{.When.Time}}</b>{{end}}<span>{{.When.Day}}</span></div></div>
+<span class="bpills-m">{{template "rwpill" .}}{{if not (and $rw (eq $rw.State "waiting"))}}<span class="st {{$b.St}} bst-m">{{if $b.Blocked}}blocked{{else}}{{$b.St}}{{end}}</span>{{end}}</span>
+<div class="bt{{if and $rw (eq $rw.State "waiting")}} rwdim{{end}}">{{template "blogcover" $b}}<div class="grow"><div class="btitle">{{$b.P.Title}}</div><div class="bdesc">{{$b.P.Description}}</div>{{if $b.Opening}}<p class="bopen">{{$b.Opening}}</p>{{end}}</div></div>
+{{template "blogchips" $b}}
+<a class="lnk bread" href="/drafts/{{$d.ID}}">{{icon "book"}}{{if $b.Imported}}Details{{else}}Read full post{{end}}</a>
+{{template "lintbox" .}}
+{{if and (eq $d.Status "failed") $b.Blocked}}<div class="errbox blocked" role="alert">{{icon "warn"}}<div class="grow"><b>Blocked at {{$b.FailedAt}}: the slug is taken. Nothing was published.</b> {{$d.Error}} Edit the slug, then approve again.{{if $b.NApproved}} Linked promos are held and stay approved.{{end}}
+<div class="row wrap mt10 g8"><a class="btn pri" href="/drafts/{{$d.ID}}/edit">{{icon "edit"}}Change slug</a><a class="btn" href="/drafts/{{$d.ID}}#history">{{icon "log"}}View log</a></div></div></div>
+{{else if eq $d.Status "failed"}}<div class="errbox" role="alert">{{icon "warn"}}<div class="grow"><b>Publish failed at {{$b.FailedAt}}. Nothing is live.</b> {{$d.Error}}{{if $b.NApproved}} Linked promos are held and stay approved; they post on their own once the blog is live.{{end}}
+<div class="row wrap mt10 g8"><form method="post" action="/drafts/{{$d.ID}}/publish"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{.Ret}}"><button class="btn pri"{{if or $b.Off $b.PubOff}} disabled aria-disabled="true"{{if $b.PubOff}} title="{{$b.PubOff}}"{{end}}{{end}}>{{icon "retry"}}Retry publish</button></form><a class="btn" href="/drafts/{{$d.ID}}#history">{{icon "log"}}View log</a></div></div></div>{{end}}
+{{if and (eq $d.Status "posted") $b.P.PublishedURL}}<div class="okbox" role="status">{{icon "globe"}}<div class="grow"><b>{{if $b.Imported}}Published on {{$b.Published}}.</b> Imported from the site; the text stays there.{{else}}Published at {{$b.Published}}.</b>{{if $b.LiveAt}} Live check passed at {{$b.LiveAt}}.{{end}}{{if $b.Adopted}} Matched to the live post by import.{{end}}{{end}}<div class="purl"><a href="{{$b.P.PublishedURL}}" target="_blank" rel="noopener noreferrer">{{$b.P.PublishedURL}}</a></div></div></div>{{end}}
+{{if and (eq $d.Status "posting") $b.Hook}}<div class="hint neutral mt10 hookst" role="status">{{icon "send"}}<span>{{$b.Hook}}</span></div>{{end}}
+{{if $d.Note}}<div class="hint neutral mt10">{{icon "info"}}<span>Note from {{$d.Source}}: {{$d.Note}}</span></div>{{end}}
+{{if $a}}{{template "rwboxes" .}}{{template "rwnote" .}}{{end}}
+{{if .QueueNest}}{{if or .Promos .PromoElse}}<section class="promos pnest" aria-label="Promo posts"><div class="proh">{{icon "thread"}}<b>{{if .Promos}}{{len .Promos}} promo post{{if ne (len .Promos) 1}}s{{end}}{{else}}Promo posts{{end}}{{if and (eq $d.Status "failed") $b.NApproved}}<span class="muted fw5">, held</span>{{end}}</b></div>
+{{range .Promos}}{{template "xcard" .}}{{end}}{{if .PromoElse}}<p class="pelse small muted">{{if .Promos}}Also on other tabs: {{else}}On other tabs: {{end}}{{range $i, $e := .PromoElse}}{{if $i}}, {{end}}<a href="{{$e.Href}}">{{$e.N}} {{$e.Label}}</a>{{end}}.</p>{{end}}</section>{{end}}
+{{else if $b.Promos}}<div class="promos"><div class="proh">{{icon "thread"}}<b>{{len $b.Promos}} promo post{{if ne (len $b.Promos) 1}}s{{end}}{{if and (eq $d.Status "failed") $b.NApproved}}<span class="muted fw5">, held</span>{{end}}</b></div>
+<ul>{{range $b.Promos}}<li><a href="{{.Href}}"><span class="av s {{.Acct.Color}}" aria-hidden="true">{{.Acct.Initials}}</span><span class="grow"><span class="ph1">@{{.Acct.Handle}} · <span class="t">{{.Time}}</span></span><span class="ptx">{{.Text}}</span></span><span class="st {{.StCls}}">{{.St}}</span></a></li>{{end}}</ul></div>{{end}}
+{{if and (eq $d.Status "rejected") $d.RejectReason}}<div class="hint bad reason">{{icon "x"}}<span>Reason{{if $d.TokenID}} (the agent can read this){{end}}: {{$d.RejectReason}}</span></div>{{end}}
+</div>
+<div class="bside">
+<div class="prop"><div class="sect">{{if eq $d.Status "posted"}}Published{{else if eq $d.Status "rejected"}}Was for{{else}}Publishes{{end}}</div><div class="day">{{.When.Day}}</div><div class="tm t">{{.When.Time}} <span>{{.When.Zone}}</span></div></div>
+{{template "blogacts" .}}
+</div>
+{{if $b.PubOpen}}{{template "pubconfirm" .}}{{end}}
+</article>{{end}}
+
+{{define "settabs"}}{{/* the Settings tab bar: "general", "accounts" or "blogs" marks the current tab. Every Settings page and sub-page renders it. */}}<nav class="stabs" aria-label="Settings"><a href="/settings"{{if eq . "general"}} class="on" aria-current="page"{{end}}>General</a><a href="/settings/accounts"{{if eq . "accounts"}} class="on" aria-current="page"{{end}}>X accounts</a>{{if blogsOn}}<a href="/settings/blogs"{{if eq . "blogs"}} class="on" aria-current="page"{{end}}>Blogs</a>{{end}}<a href="/settings#hooksh">Rewrite webhooks</a></nav>{{end}}
+
+{{define "levelsel"}}<select name="{{.N}}" aria-label="{{.L}}"><option value="block"{{if eq .V "block"}} selected{{end}}>Block</option><option value="warn"{{if eq .V "warn"}} selected{{end}}>Warn</option></select>{{end}}
+
+{{define "blogfields"}}{{/* blogForm */}}{{$f := .}}
+<div class="bgrid"><div><label class="f mt0" for="name{{.ID}}">Name</label><input type="text" id="name{{.ID}}" name="name" value="{{.Name}}" maxlength="60" required placeholder="e.g. notes.example.com" autocomplete="off"></div>
+<div><label class="f mt0" for="site{{.ID}}">Site URL</label><input class="mono" type="url" id="site{{.ID}}" name="site_url" value="{{.SiteURL}}" required placeholder="https://" autocomplete="off" spellcheck="false"></div></div>
+<fieldset class="bmeth"><legend class="f">Publish method</legend><div class="mpair">
+<label class="mopt"><input type="radio" name="method" value="api"{{if eq .Method "api"}} checked{{end}}><span>{{icon "code"}}Publisher API</span></label>
+<label class="mopt"><input type="radio" name="method" value="webhook"{{if eq .Method "webhook"}} checked{{end}}><span>{{icon "send"}}Webhook to agent</span></label></div></fieldset>
+<div class="bsec">Connection</div>
+<p class="tiny muted bconn api">xpost calls the blog's publisher API with a sealed token.</p>
+<p class="tiny muted bconn webhook">Same fields as the Rewrite webhook. xpost sends the approved post to the agent, which publishes it and reports back.</p>
+<div class="bconn api"><label class="f" for="apib{{.ID}}">API base URL</label><input class="mono" type="url" id="apib{{.ID}}" name="api_base" value="{{.APIBase}}" placeholder="https://" autocomplete="off" spellcheck="false"><p class="tiny muted mt4">The site root, like https://example.com. xpost adds the API path.</p></div>
+<div class="sgrid">{{range .Sealed}}<div class="bconn {{.Method}}">{{if .Set}}<div class="f" id="l{{.Field}}{{$f.ID}}">{{.Label}}</div>
+<div class="sealed"><span class="chip hk set">{{icon "lock"}}Set</span><span class="grow"></span><button class="btn ghost dangert" name="op" value="clear-{{.Field}}" formnovalidate data-confirm="Clear the {{.Label}}? The blog goes back to Untested.">Clear</button></div>
+<details class="authrep"><summary class="linkbtn">Replace</summary><label class="f" for="{{.Field}}{{$f.ID}}">New {{.Label}}</label><div class="keyf">{{icon "key"}}<input class="mono" type="password" id="{{.Field}}{{$f.ID}}" name="{{.Field}}" autocomplete="new-password" spellcheck="false" placeholder="Paste the new value"></div><p class="tiny muted mt4">Then Save. The old value is replaced.</p></details>
+{{else}}<label class="f" for="{{.Field}}{{$f.ID}}">{{.Label}}{{if .Optional}} <span class="muted">(optional)</span>{{end}}</label><div class="keyf">{{icon "key"}}<input class="mono" type="password" id="{{.Field}}{{$f.ID}}" name="{{.Field}}" autocomplete="new-password" spellcheck="false" placeholder="{{.Placeholder}}"></div>{{end}}
+<p class="tiny muted mt4">{{.Help}}</p></div>{{end}}</div>
+<div class="bconn webhook"><label class="f" for="ptok{{.ID}}">Publishing token</label><select id="ptok{{.ID}}" name="publish_token"><option value="0">None</option>{{range .Tokens}}<option value="{{.ID}}"{{if eq .ID $f.Tok}} selected{{end}}>{{.Label}}</option>{{end}}</select><p class="tiny muted mt4">The agent token that pulls this blog's posts and reports back. Only tokens with blogs:publish are listed; make one on the Log page.</p></div>
+<div class="hint neutral mt10">{{icon "info"}}<span>Changing the connection or the method resets this blog to Untested.</span></div>
+<div class="bsec">Defaults</div>
+<div class="bgrid"><div><label class="f mt0" for="clock{{.ID}}">Default publish time</label><input type="time" id="clock{{.ID}}" name="clock" value="{{.Clock}}" required><p class="tiny muted mt4">In {{if .BZone}}{{.BZone}}{{else}}your time zone, {{.Zone}}{{end}}.</p></div>
+<div><label class="f mt0" for="bz{{.ID}}">Time zone <span class="muted">(optional)</span></label><input type="text" id="bz{{.ID}}" name="zone" value="{{.BZone}}" list="bzl{{.ID}}" autocomplete="off" spellcheck="false" placeholder="{{.Zone}}"><datalist id="bzl{{.ID}}">{{range .Zones}}<option value="{{.}}">{{end}}</datalist><p class="tiny muted mt4">An IANA name. Sets the default time and the post's date. Empty uses your time zone.</p></div>
+<div><label class="f mt0" for="promo{{.ID}}">Default promo account</label><select id="promo{{.ID}}" name="promo"><option value="">None</option>{{range .XAccts}}<option value="{{.Handle}}"{{if eq .Handle $f.Promo}} selected{{end}}>@{{.Handle}}</option>{{end}}</select><p class="tiny muted mt4">Promos post +2h after the blog. Cross-promos from other accounts are allowed.</p></div></div>
+<div class="bsec">Content rules</div>
+<fieldset class="topics" id="topics{{.ID}}" data-topics><legend class="f mt0">Banned topics</legend>
+<div class="tchips" data-tchips>{{range .Topics}}<label class="tchip"><input type="checkbox" name="topic" value="{{.}}" checked><span class="tt">{{.}}</span><span class="tx" title="Remove {{.}}">{{icon "x"}}</span></label>{{else}}<span class="tiny muted tnone" data-tnone>No banned topics yet.</span>{{end}}</div>
+<div class="tadd"><input id="topicnew{{.ID}}" name="topic_new" maxlength="80" placeholder="e.g. sample topic" aria-label="New banned topic" data-topicnew><button class="btn" name="op" value="addtopic" formnovalidate data-addtopic>{{icon "plus"}}Add topic</button></div>
+<template data-tchip><label class="tchip"><input type="checkbox" name="topic" checked><span class="tt"></span><span class="tx">{{icon "x"}}</span></label></template>
+<p class="tiny muted mt4">Tap a topic to remove it. Changes apply when you save.</p></fieldset>
+<div class="f">Lint rules</div>
+<ul class="lrules">
+<li><div class="grow"><b>Em dash</b><div class="tiny muted">Stops Approve and Publish now.</div></div><span class="chip lv block">Block</span></li>
+<li><div class="grow"><b>En dash</b><div class="tiny muted">Shows a warning. Nothing to confirm.</div></div>{{template "levelsel" (lvl "lint_en" "En dash" .EnDash)}}</li>
+<li><div class="grow"><b>Banned topics</b><div class="tiny muted">A banned topic found in the post.</div></div>{{template "levelsel" (lvl "lint_banned" "Banned topics" .Banned)}}</li>
+<li><div class="grow"><b>Leading # title repeats the title</b><div class="tiny muted">The title field is used instead.</div></div>{{template "levelsel" (lvl "lint_h1" "Leading # title" .H1)}}</li>
+</ul>
+<label class="cbx"><input type="checkbox" name="cover_alt" value="1"{{if .CoverAl}} checked{{end}}><span>Require cover alt text</span></label>
+{{end}}

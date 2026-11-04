@@ -1,0 +1,57 @@
+{{define "content"}}{{$csrf := .CSRF}}{{$sp := .Data.Spend}}
+<div class="ph"><div><h1>Log &amp; spend</h1><div class="sub">What the poster did, what it cost, and which agents can propose drafts.</div></div></div>
+{{if .Data.NewToken}}<div class="hint ok flash" role="status">{{icon "key"}}<div class="grow"><b>Token created. Copy it now: it is shown only once.</b>
+<div class="secret"><input type="text" id="newtok" value="{{.Data.NewToken}}" readonly aria-label="New agent token"><button type="button" class="btn" data-copy="newtok">Copy</button></div>
+<div class="tiny mt6">Give it to the agent as <span class="mono">Authorization: Bearer &lt;token&gt;</span>. xpost stores only a hash.</div></div></div>{{end}}
+<div class="lgrid">
+<section class="card pad" data-live="spend">
+<div class="row"><h2 class="grow">Spend this month · {{.Data.MonthName}}</h2>{{if $sp.Example}}<span class="ex">Example values</span>{{end}}</div>
+<div class="hint {{if .Data.CanPost}}ok{{else}}warn{{end}} mt8" role="status">{{if .Data.CanPost}}{{icon "check"}}{{else}}{{icon "warn"}}{{end}}<span><b>{{.Data.SchedText}}</b>{{if .Data.Block}} {{.Data.Block}}{{if not .Data.CapSet}} <a href="/settings">Set the cap</a>{{end}}{{end}}</span></div>
+{{if and .Data.SchedOn (not .Data.Block)}}{{range .Data.MediaBlocks}}<div class="hint warn mt8" role="status">{{icon "img"}}<span>{{.}}</span></div>{{end}}{{end}}
+<div class="row mt8 aib"><span class="big t">{{.Data.Total}}</span><span class="muted">{{if .Data.CapSet}}of <b class="t">{{.Data.Cap}}</b> monthly cap{{else}}no monthly cap set{{end}}</span><span class="grow"></span><span class="small muted">{{if not .Data.RatesKnown}}Rates unverified{{else if .Data.ProjOK}}Projected by {{.Data.MonthEnd}}: <b class="t">{{.Data.Proj}}</b>{{else}}Projection starts on day 4{{end}}</span></div>
+<div class="meter" role="img" aria-label="{{.Data.Total}}{{if .Data.CapSet}} of {{.Data.Cap}}{{end}}"><span class="proj w{{.Data.ProjPct}}"></span><span class="used w{{.Data.Pct}}"></span>{{if .Data.CapSet}}<span class="tick"></span>{{end}}</div>
+<div class="tiny muted row"><span>$0</span><span class="grow"></span><span>{{if .Data.CapSet}}Orange tick: 80% warning at {{.Data.Warn}} · the cap pauses posting{{else}}Posting stays off until a cap is set{{end}}</span></div>
+<table class="brk"><tr><td>{{$sp.Posts}} posts × {{.Data.Rate}}</td><td class="t">{{.Data.PostsAmt}}</td></tr>
+<tr><td>{{$sp.LinkPosts}} posts with link × {{.Data.LinkRate}}</td><td class="t">{{.Data.LinksAmt}}</td></tr>
+<tr><td>{{$sp.Images}} image upload{{if ne $sp.Images 1}}s{{end}} × {{.Data.ImageRate}}{{if $sp.UnknownUploads}} (includes {{$sp.UnknownUploads}} with an unknown outcome, counted as billed){{end}}</td><td class="t">{{.Data.ImagesAmt}}</td></tr>
+<tr><td>{{$sp.Alts}} alt text call{{if ne $sp.Alts 1}}s{{end}} × {{.Data.AltRate}}{{if $sp.UnknownAlts}} (includes {{$sp.UnknownAlts}} with an unknown outcome, counted as billed){{end}}</td><td class="t">{{.Data.AltsAmt}}</td></tr>
+{{if $sp.UnknownParts}}<tr><td>Includes {{$sp.UnknownParts}} part{{if ne $sp.UnknownParts 1}}s{{end}} with an unknown outcome (counted as billed)</td><td></td></tr>{{end}}
+<tr><td>{{$sp.FailedParts}} failed part{{if ne $sp.FailedParts 1}}s{{end}} (assumed not billed)</td><td class="t">$0.00</td></tr>
+<tr class="muted"><td>{{.Data.PrevName}} total, for reference</td><td class="t fw5">{{.Data.Prev}}</td></tr></table>
+<div class="hint neutral mt10">{{icon "info"}}<span>Estimated from calls this app made. {{if .Data.RatesKnown}}Rates come from the server config (XPOST_COST_POST_USD, XPOST_COST_LINK_POST_USD); check them against console.x.com.{{else}}Rates unverified: set XPOST_COST_POST_USD and XPOST_COST_LINK_POST_USD on the server.{{end}}{{if not .Data.UploadKnown}} The image upload rate (XPOST_COST_MEDIA_UPLOAD_USD) is unverified too.{{end}}{{if not .Data.AltKnown}} The alt text rate (XPOST_COST_MEDIA_METADATA_USD) is unverified too.{{end}} <a href="/settings">{{if .Data.CapSet}}Change cap{{else}}Set cap{{end}}</a></span></div>
+</section>
+<section class="card pad">
+<div class="row"><h2 class="grow">Agent tokens</h2>
+<details class="newtok"><summary class="btn">{{icon "plus"}}New token</summary>
+<form class="tokform" method="post" action="/tokens"><input type="hidden" name="csrf" value="{{$csrf}}">
+<label class="f m0" for="tname">Name</label><input type="text" id="tname" name="name" maxlength="60" placeholder="e.g. sample-agent" required>
+<div class="scopes"><label><input type="checkbox" name="drafts_write" value="1" checked> drafts:write</label><label><input type="checkbox" name="log_read" value="1"> log:read</label><label><input type="checkbox" name="drafts_revise" value="1"> drafts:revise</label>{{if blogsOn}}<label><input type="checkbox" name="blogs_publish" value="1"> blogs:publish</label>{{end}}</div>
+<button class="btn pri">Create token</button></form></details></div>
+<p class="small muted m640">Tokens can propose drafts, read the log and, with drafts:revise, send back a rewrite you asked for.{{if blogsOn}} With blogs:publish, a token pulls and reports the posts of the one blog you pick it for in Settings &gt; Blogs.{{end}} They can never approve, edit an approved item, or post. Shown once at creation.</p>
+{{range .Data.Tokens}}<div class="trow">{{icon "robot"}}<div class="grow"><b>{{.T.Name}}</b><div class="tiny muted">created {{.Created}} · <span class="mono">{{.T.Masked}}</span><span class="lu-m"> · {{if eq .LastUsed "Never"}}never used{{else}}used {{.LastUsed}}{{end}}</span></div>
+<div class="mt3">{{range .T.Scopes}}<span class="scope">{{.}}</span>{{end}}</div></div>
+<div class="small muted w90px lu-d">{{.LastUsed}}</div>
+<form method="post" action="/tokens/{{.T.ID}}/revoke" data-confirm="Revoke {{.T.Name}}? Its agent loses access at once."><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn danger">Revoke</button></form></div>
+{{else}}<p class="small muted mt10">No agent tokens yet.</p>{{end}}
+</section>
+</div>
+<section class="card" data-live="postlog">
+<div class="row pad pb8"><h2 class="grow">Post log</h2>
+<nav class="seg" aria-label="Filter"><a href="/log"{{if eq .Data.Filter ""}} class="on"{{end}}>All <span class="c t">{{.Data.NAll}}</span></a><a href="/log?status=posted"{{if eq .Data.Filter "posted"}} class="on"{{end}}>Posted <span class="c t">{{.Data.NPosted}}</span></a><a href="/log?status=failed"{{if eq .Data.Filter "failed"}} class="on"{{end}}>Failed <span class="c t">{{.Data.NFailed}}</span></a></nav></div>
+<table class="tbl"><thead><tr><th>Time</th><th>Account</th><th>Post</th><th>Status</th><th>Est. cost</th></tr></thead><tbody>
+{{range $row := .Data.Rows}}<tr{{if eq .E.Status "failed"}} class="failrow"{{end}}>
+<td><b class="t">{{.Time}}</b><div class="tiny muted">{{.Day}}</div></td>
+<td><span class="row g6"><span class="av s {{.Acct.Color}}">{{.Acct.Initials}}</span><b>@{{.E.Account}}</b></span></td>
+<td class="mw0"><div class="small owa">{{.E.Preview}}</div><div class="tiny muted">{{.Kind}}{{if .E.Example}} · example{{end}}</div>
+{{if .E.URL}}<div class="tiny mono mt3 owa">{{icon "ext"}} {{.LinkText}}</div>{{end}}
+{{if .E.Error}}<div class="hint {{if eq .E.Status "retry"}}warn{{else}}bad{{end}} mt6">{{icon "warn"}}<span>{{.E.Error}}</span></div>{{end}}
+{{with .Act}}{{$a := .}}{{range .Unknown}}<form class="resolve mt6" method="post" action="/drafts/{{$a.DraftID}}/resolve"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="v" value="{{$a.Version}}"><input type="hidden" name="part" value="{{.Part}}"><input type="hidden" name="account" value="{{$row.E.Account}}">
+<label class="tiny muted" for="post-{{$a.DraftID}}-{{.Part}}">Part {{.Part}} on X? Paste its link or id</label><input type="text" id="post-{{$a.DraftID}}-{{.Part}}" name="post" inputmode="url" autocomplete="off" placeholder="…/status/123…">
+<span class="row g6 wrap"><button class="btn" name="outcome" value="posted">It posted</button><button class="btn" name="outcome" value="not_posted" formnovalidate>It did not post</button></span></form>{{end}}
+{{if .Retry}}<form class="mt6" method="post" action="/drafts/{{.DraftID}}/retry"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="v" value="{{.Version}}"><button class="btn">{{.Retry}}</button></form>{{end}}{{end}}</td>
+<td><span class="st {{.E.Status}}">{{.Label}}</span></td>
+<td class="cost t">{{.Cost}}</td></tr>
+{{else}}<tr><td colspan="5" class="muted small">Nothing posted in the last 30 days.</td></tr>{{end}}
+</tbody></table>
+</section>
+{{end}}

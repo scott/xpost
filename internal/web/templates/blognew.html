@@ -1,0 +1,15 @@
+{{define "content"}}{{$f := .Data.F}}
+<div class="ph"><div class="grow"><h1>Add blog</h1><div class="sub">{{if eq .Data.Step 1}}Step 1 of 2: how xpost publishes to it.{{else}}Step 2 of 2: {{if eq $f.Method "api"}}Publisher API{{else}}Webhook to agent{{end}}.{{end}}</div></div></div>
+{{template "settabs" "blogs"}}
+{{if eq .Data.Step 1}}<form class="card pad mw760" method="get" action="/settings/blogs/new">
+<fieldset class="bmeth big"><legend class="h2">How does xpost publish to this blog?</legend><div class="mpair">
+<label class="mopt big"><input type="radio" name="method" value="api" checked><span>{{icon "code"}}<b>Publisher API</b><span class="tiny muted">xpost calls the blog's publishing API with a sealed token.</span></span></label>
+<label class="mopt big"><input type="radio" name="method" value="webhook"><span>{{icon "send"}}<b>Webhook to agent</b><span class="tiny muted">xpost sends the approved post to an agent, which publishes it and reports back.</span></span></label></div></fieldset>
+<div class="bbtns"><a class="btn" href="/settings/blogs">Cancel</a><button class="btn pri">Continue</button></div>
+</form>{{else}}<form class="card pad mw760 bform" method="post" action="/settings/blogs"><input type="hidden" name="csrf" value="{{.CSRF}}">
+<div class="row newh"><span class="grow small muted">New blog</span><span class="bdot untested">Untested</span></div>
+{{template "blogfields" $f}}
+<p class="small blocked mt14">A new blog cannot publish until its first test passes. Drafts can still be reviewed. Test it from Settings &gt; Blogs once it is added.</p>
+<div class="bbtns"><a class="btn" href="/settings/blogs/new">Back</a><button class="btn pri">Add blog</button></div>
+</form>{{end}}
+{{end}}

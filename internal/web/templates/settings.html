@@ -1,0 +1,37 @@
+{{define "content"}}
+<div class="ph"><div><h1>Settings</h1><div class="sub">Time zone, the monthly spend cap and agent rewrite webhooks.</div></div></div>
+{{template "settabs" "general"}}
+<form class="card pad mw520" method="post" action="/settings">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+<label class="f mt0" for="tz">Time zone</label>
+<input type="text" id="tz" name="tz" value="{{.Data.TZ}}" list="zones" required autocomplete="off">
+<datalist id="zones">{{range .Data.Zones}}<option value="{{.}}">{{end}}</datalist>
+<p class="tiny muted mt4">An IANA name such as America/Denver. All times in xpost show in this zone.</p>
+<label class="f" for="cap">Monthly spend cap (USD)</label>
+<input type="text" id="cap" name="cap" value="{{.Data.Cap}}" inputmode="decimal" placeholder="e.g. 20.00"{{if .Data.CapSet}} required{{end}}>
+<p class="tiny muted mt4">More than $0, at most $10,000. The scheduler pauses posting when the month's estimated spend reaches it.{{if not .Data.CapSet}} <b>No cap is set, so nothing posts.</b>{{end}}</p>
+{{if .Data.Block}}<div class="hint warn mt8" role="status">{{icon "warn"}}<span>{{.Data.Block}}</span></div>{{else}}{{range .Data.MediaBlocks}}<div class="hint neutral mt8" role="status">{{icon "img"}}<span>{{.}}</span></div>{{end}}{{end}}
+<button class="btn pri mt14">Save settings</button>
+</form>
+<section class="card pad mw760 mt14 hooks" aria-labelledby="hooksh">
+<h2 class="h2" id="hooksh">Rewrite webhooks</h2>
+<p class="small muted mt4">Rewrite sends a pending draft and your note to the agent that wrote it. The agent sends the new version back through the API with the drafts:revise scope. Each agent needs its own webhook.</p>
+{{range .Data.Hooks}}{{$a := .A}}<div class="wh" id="agent-{{$a.ID}}">
+<div class="whtop"><span class="agav {{$a.Color}}" aria-hidden="true">{{$a.Initial}}</span><div class="grow"><b>{{$a.Name}}</b><div class="tiny muted">Agent token · {{.Scopes}}</div></div><span class="chip hk {{.Status}}">{{if eq .Status "ok"}}{{icon "check"}}{{end}}{{.Chip}}</span></div>
+<form id="hook{{$a.ID}}" method="post" action="/settings/webhooks/{{$a.ID}}" class="whf"><input type="hidden" name="csrf" value="{{$.CSRF}}">
+<div class="whgrid"><div><label class="f" for="url{{$a.ID}}">Rewrite webhook URL</label><input class="mono" type="url" id="url{{$a.ID}}" name="url" value="{{.URL}}" placeholder="https://" autocomplete="off" spellcheck="false" data-hook="{{$a.ID}}"></div>
+<div><label class="f" for="key{{$a.ID}}">Sender key</label><div class="keyf">{{icon "lock"}}<input class="mono" type="password" id="key{{$a.ID}}" name="key" autocomplete="new-password" spellcheck="false" placeholder="{{if $a.Hook}}••••••••••••••••{{else}}Paste the key{{end}}" data-hook="{{$a.ID}}">{{if $a.Hook}}<span class="tiny muted t">ends {{$a.Hook.Last4}}</span>{{end}}</div>
+<p class="tiny muted mt4">Stored encrypted. Never shown again after saving.</p></div></div>
+<div class="whauth">{{if and $a.Hook $a.Hook.HasAuth}}<div class="f" id="authl{{$a.ID}}">Authorization header</div>
+<div class="authset"><span class="chip hk set">{{icon "lock"}}Set</span><span class="tiny muted grow">Sent on every request. Never shown again.</span><button class="btn ghost dangert" name="op" value="authclear" data-confirm="Clear the Authorization header for {{$a.Name}}? Requests go out without one.">Clear</button></div>
+<details class="authrep"><summary class="linkbtn">Replace</summary><label class="f" for="auth{{$a.ID}}">New Authorization header</label><div class="keyf">{{icon "key"}}<input class="mono" type="password" id="auth{{$a.ID}}" name="auth" autocomplete="off" spellcheck="false" placeholder="Paste the new value"></div><p class="tiny muted mt4">Paste the new value, e.g. Bearer ...</p><p class="tiny muted">A leading Authorization: is removed.</p><p class="tiny muted">Then Save. The old value is replaced.</p></details>
+{{else}}<label class="f" for="auth{{$a.ID}}">Authorization header <span class="muted">(optional)</span></label><div class="keyf">{{icon "key"}}<input class="mono" type="password" id="auth{{$a.ID}}" name="auth" autocomplete="off" spellcheck="false" placeholder="{{if $a.Hook}}Not set{{else}}Optional{{end}}"></div>
+<p class="tiny muted mt4">Paste the value, e.g. Bearer ...</p><p class="tiny muted">A leading Authorization: is removed.</p><p class="tiny muted">For receivers that require one. Stored encrypted, never shown again.</p>{{end}}</div>
+{{if .Err}}<div class="hint bad mt8" role="alert">{{icon "warn"}}<span>{{.Err}}</span></div>{{else if eq .Status "ok"}}<div class="hint ok mt8">{{icon "check"}}<span>{{.Note}}</span></div>{{else if eq .Status "set"}}<div class="hint info mt8">{{icon "info"}}<span>{{.Note}}</span></div>{{else if eq .Status "bad"}}<div class="hint warn mt8">{{icon "warn"}}<span>{{.Note}}</span></div>{{else}}<p class="tiny muted mt8">Rewrite stays off for {{$a.Name}}'s drafts until a URL and key are saved.</p>{{end}}
+{{if not $a.Revise}}<div class="hint neutral mt8">{{icon "info"}}<span>This token lacks drafts:revise, so {{$a.Name}} can't send a rewrite back. Make a new token with drafts:revise on the Log page.</span></div>{{end}}
+</form>
+<div class="whbt"><button class="btn{{if eq .Status "set"}} pri{{end}}" form="hook{{$a.ID}}" name="op" value="test"{{if not $a.Hook}} disabled{{end}}>{{icon "send"}}Test</button><button class="btn" form="hook{{$a.ID}}" name="op" value="save"{{if not $a.Hook}} data-needs="{{$a.ID}}"{{end}}>Save</button><span class="grow"></span>
+{{if $a.Hook}}<form method="post" action="/settings/webhooks/{{$a.ID}}" data-confirm="Remove the rewrite webhook for {{$a.Name}}? Rewrite turns off for its drafts."><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="btn ghost dangert" name="op" value="remove">Remove</button></form>{{end}}</div>
+</div>{{else}}<p class="small muted mt10">No agent tokens yet. Make one on the Log page, then set its webhook here.</p>{{end}}
+</section>
+{{end}}

@@ -1,0 +1,7 @@
+{{define "content"}}<div class="steps" aria-hidden="true"><span class="on"></span><span class="on"></span></div>
+<h1>Add your passkey</h1><p class="muted small">Step 2 of 2. Every sign-in needs your password and this passkey.</p>
+<label class="f" for="pkname">Name it</label><input type="text" id="pkname" data-passkey-name value="My phone" maxlength="60">
+<button type="button" class="btn pri" data-passkey-register data-csrf="{{.CSRF}}" disabled>{{icon "key"}}Create passkey</button>
+<p class="small mt10 badtxt" data-passkey-msg role="status"></p>
+{{if not .Data.Passkeys}}<div class="hint warn">{{icon "warn"}}<span>Passkeys need https or http://localhost.</span></div>{{end}}
+{{end}}

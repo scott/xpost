@@ -1,0 +1,28 @@
+{{define "content"}}{{$csrf := .CSRF}}{{$testOn := .Data.TestOn}}
+<div class="ph"><div class="grow"><h1>Settings</h1><div class="sub">Time zone, spend cap, X accounts, blogs and rewrite webhooks.</div></div></div>
+{{template "settabs" "blogs"}}
+<section class="card pad mw760 blogs" aria-labelledby="blh">
+<div class="blhd"><div class="grow"><h2 class="h2" id="blh">Blogs</h2><p class="small muted mt4">Sites xpost publishes approved blog posts to. A blog can publish only after its last test passed.</p></div><a class="btn pri" href="/settings/blogs/new">{{icon "plus"}}Add blog</a></div>
+{{range .Data.Sets}}{{$b := .B}}<details class="blg" id="blog-{{$b.ID}}"{{if .Open}} open{{end}}>
+<summary>{{template "blogav" $b}}<div class="grow"><b>{{brk $b.Name}}</b><div class="tiny muted">{{.Sub}}</div></div><span class="bdot {{.Dot}}">{{.DotLabel}}</span><span class="chev">{{icon "down"}}</span></summary>
+<form class="bform" method="post" action="/settings/blogs/{{$b.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}">
+{{template "blogfields" .F}}
+<p class="tiny muted mt14">Test is a dry run{{if eq $b.Method "webhook"}}: a signed blog.test event the agent must answer with a 2xx{{else}}: an authenticated read that lists published posts{{end}}. Nothing is published.</p>
+{{if .Err}}<div class="hint bad mt8" role="alert">{{icon "warn"}}<span>{{.Err}}</span></div>{{end}}
+{{if .Note}}<div class="hint neutral mt8 tnote" role="status">{{icon "info"}}<span>{{.Note}}</span></div>{{end}}
+<div class="hint {{.TestCls}} mt8" role="status">{{if eq .TestCls "ok"}}{{icon "check"}}{{else if eq .TestCls "bad"}}{{icon "warn"}}{{else}}{{icon "info"}}{{end}}<span><b>{{.Test}}</b></span></div>
+{{if not $b.Ready}}<p class="small blocked mt8">{{$b.Name}} cannot publish until its last test passes. Drafts can still be reviewed.</p>{{end}}
+{{if not $testOn}}<p class="tiny muted mt8">Testing is not available on this server yet: no blog publisher runs here.</p>{{end}}
+<div class="bbtns"><button class="btn{{if not $b.Ready}} pri{{end}}" name="op" value="test" formnovalidate{{if not $testOn}} disabled{{end}}>{{icon "send"}}Test</button><button class="btn" name="op" value="save">Save</button></div>
+</form>
+<div class="bimp"><a class="btn" href="/settings/blogs/{{$b.ID}}/import">{{icon "import"}}Import existing posts</a><span class="tiny muted">Read-only. Adds the posts already live on {{$b.Name}} as Published, after a dry run.</span></div>
+<div class="brm"><form method="post" action="/settings/blogs/{{$b.ID}}" data-confirm="Remove {{$b.Name}}? xpost stops publishing to this blog and deletes its sealed credentials. Published history stays."><input type="hidden" name="csrf" value="{{$csrf}}"><button class="linkbtn dangert" name="op" value="remove">{{icon "x"}}Remove blog</button></form><span class="tiny muted">Only when it has no pending, approved or scheduled posts.</span></div>
+{{with .Busy}}<a class="pscrim" href="/settings/blogs?open={{$b.ID}}#blog-{{$b.ID}}" aria-label="Close"></a><div class="pubdlg" role="dialog" aria-modal="true" aria-labelledby="rmt{{$b.ID}}">
+<span class="grab" aria-hidden="true"></span><h3 id="rmt{{$b.ID}}">Can't remove {{$b.Name}} yet</h3>
+<p class="small mt8">{{.Total}} post{{if ne .Total 1}}s are{{else}} is{{end}} pending, approved or scheduled for {{$b.Name}}. Publish, reject or wait for {{if ne .Total 1}}them{{else}}it{{end}} first.</p>
+<p class="tiny muted mt4">{{.Pending}} pending · {{.Approved}} approved · {{.Scheduled}} scheduled</p>
+<p class="small muted mt8">Published history stays. Removing a blog never deletes posts that are already live.</p>
+<div class="pact"><a class="btn" href="/settings/blogs?open={{$b.ID}}#blog-{{$b.ID}}">Close</a><a class="btn pri" href="/queue?kind=blog&amp;blog={{$b.ID}}{{if not .Pending}}&amp;status=approved{{end}}" autofocus>View them in the queue</a></div></div>{{end}}
+</details>{{else}}<p class="small muted mt10">No blogs yet. Add one to review and publish blog posts from agents here.</p>{{end}}
+</section>
+{{end}}

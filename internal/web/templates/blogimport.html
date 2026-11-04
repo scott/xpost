@@ -1,0 +1,20 @@
+{{define "content"}}{{$d := .Data}}{{$b := $d.B}}
+<div class="ph"><div class="grow"><h1>Import posts</h1><div class="sub">{{brk $b.Name}} · read-only</div></div></div>
+{{template "settabs" "blogs"}}
+<section class="card pad mw760 imp" aria-labelledby="imh">
+<div class="row g8">{{template "blogav" $b}}<div class="grow mw0"><h2 class="h2" id="imh">Import existing posts</h2><div class="tiny muted">{{$b.Name}}</div></div></div>
+<p class="small mt10">xpost reads the posts already live on {{$b.Name}} and adds them here as Published, so their slugs are known. It only reads: nothing is written to the site, nothing is published, and no promos are created. A post already in xpost is never changed.</p>
+<p class="tiny muted mt8">{{$d.Reads}} Start with a dry run: it shows what would be imported or skipped, and why, and changes nothing.</p>
+{{if $d.Note}}<div class="hint neutral mt10" role="status">{{icon "info"}}<span>{{$d.Note}}</span></div>{{end}}
+{{if $d.Err}}<div class="hint bad mt10" role="alert">{{icon "warn"}}<span>{{$d.Err}}</span></div>{{end}}
+{{if $d.Changed}}<div class="hint bad mt10" role="alert">{{icon "warn"}}<span>The site or xpost changed since the dry run. Nothing was imported. Check the list below, then import again.</span></div>{{end}}
+{{with $d.Plan}}{{if $d.Done}}<div class="okbox mt10" role="status">{{icon "check"}}<div class="grow"><b>{{if or .New .Adopted}}Imported {{.New}} post{{if ne .New 1}}s{{end}}{{if .Adopted}} and adopted {{.Adopted}} blocked draft{{if ne .Adopted 1}}s{{end}}{{end}} as Published.{{else}}Nothing to import.{{end}}</b> Nothing was sent to the site. {{.Skip}} skipped.</div></div>{{else}}<div class="hint neutral mt10" role="status">{{icon "info"}}<span><b>Dry run:</b> {{.New}} to import{{if .Adopted}}, {{.Adopted}} to adopt{{end}}, {{.Skip}} skipped. Nothing was changed.</span></div>{{end}}
+{{if $d.Lines}}<ul class="implist mt10">{{range $d.Lines}}<li><div class="row g8"><span class="st {{if eq .Cls "ok"}}{{if $d.Done}}posted{{else}}approved{{end}}{{else}}skip{{end}} impst">{{.Label}}</span><b class="grow mw0 imt">{{brk .Name}}</b></div>
+<div class="tiny muted mt4 imt">{{if .Slug}}{{brk .Slug}}{{end}}{{if .Date}} · {{.Date}}{{end}}{{if .DraftID}} · <a href="/drafts/{{.DraftID}}">#{{.DraftID}}</a>{{end}}</div>
+<div class="small mt4">{{.Reason}}</div>{{if .ChangedTxt}}<div class="tiny muted mt4">{{.ChangedTxt}}</div>{{end}}</li>{{end}}</ul>{{else}}<p class="small muted mt10">The site lists no posts.</p>{{end}}{{end}}
+<div class="bbtns">{{if and $d.Plan $d.Done}}<a class="btn pri" href="{{$d.QueueURL}}">View published posts</a>{{end}}<a class="btn" href="/settings/blogs?open={{$b.ID}}#blog-{{$b.ID}}">Back to Blogs</a>
+<form method="post" action="/settings/blogs/{{$b.ID}}/import" class="inl"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="btn{{if not $d.Plan}} pri{{end}}" name="op" value="dry"{{if not $d.On}} disabled{{end}}>{{icon "eye"}}Dry run</button></form>
+{{with $d.Plan}}{{if and (not $d.Done) (or .New .Adopted)}}<form method="post" action="/settings/blogs/{{$b.ID}}/import" class="inl" data-confirm="Import {{$d.Act}} post{{if ne $d.Act 1}}s{{end}} from {{$b.Name}} as Published? Nothing is sent to the site and no promos are created."><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="key" value="{{.Key}}"><button class="btn pri" name="op" value="apply">{{icon "import"}}Import {{$d.Act}} post{{if ne $d.Act 1}}s{{end}}</button></form>{{end}}{{end}}
+</div>
+</section>
+{{end}}

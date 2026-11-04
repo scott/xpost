@@ -1,0 +1,11 @@
+{{define "content"}}{{$csrf := .CSRF}}{{$fresh := .Data.Fresh}}{{$only := .Data.Only}}
+<div class="ph"><div><h1>Security &amp; passkeys</h1><div class="sub">Every sign-in needs your password and one of these passkeys.</div></div></div>
+<section class="card pad mw640">
+{{range .Data.Keys}}<div class="trow">{{icon "key"}}<div class="grow"><b>{{.Name}}</b><div class="tiny muted">Added {{.CreatedAt.Format "Jan 2, 2006"}}{{if .BackupEligible}} · synced{{end}}</div></div>
+{{if and $fresh (not $only)}}<form method="post" action="/security/passkeys/{{.ID}}/remove" data-confirm="Remove this passkey?"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn danger">Remove</button></form>{{end}}</div>{{end}}
+{{if $fresh}}{{if not .Data.Full}}<div class="mt12"><label class="f" for="pkname">Add another passkey</label>
+<div class="row"><input type="text" id="pkname" data-passkey-name value="Another device" maxlength="60"><button type="button" class="btn" data-passkey-register data-csrf="{{$csrf}}" disabled>{{icon "plus"}}Add</button></div>
+<p class="small mt6 badtxt" data-passkey-msg role="status"></p></div>{{end}}
+{{else}}<div class="hint neutral mt12">{{icon "info"}}<span>To add or remove a passkey, sign out and sign in again; changes are allowed for 10 minutes after sign-in.</span></div>{{end}}
+</section>
+{{end}}

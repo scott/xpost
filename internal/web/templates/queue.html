@@ -1,0 +1,159 @@
+{{define "content"}}
+<div class="lv" data-live="qtop">
+<div class="ph"><div class="grow"><h1>Review queue</h1><div class="sub">{{if .Data.Blogs}}{{.Pending}} item{{if ne .Pending 1}}s{{end}} waiting for you: X posts{{if .Data.Replies}}, replies{{end}} and blog posts. Nothing posts or publishes until you approve it.{{else if .Data.Replies}}{{.Pending}} item{{if ne .Pending 1}}s{{end}} waiting for you: X posts and replies. Nothing posts until you approve it.{{else}}{{.Pending}} draft{{if ne .Pending 1}}s{{end}} waiting for you. Nothing posts until you approve it.{{end}}</div></div><a class="btn pri" href="/compose">{{icon "plus"}}New post</a></div>
+<div class="msub">{{.Pending}} waiting · nothing {{if .Data.Blogs}}posts or publishes{{else}}posts{{end}} until you approve</div>
+<div class="filters{{if .Data.Blogs}} kf{{end}}">
+{{if .Data.KindChips}}<nav class="seg kseg" aria-label="Kind">{{range .Data.KindChips}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="true"{{end}}>{{.Label}}</a>{{end}}</nav>{{end}}
+{{if .Data.ShowAccts}}<nav class="seg ac achips" aria-label="Account">{{range .Data.AcctChips}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="true"{{end}}>{{if .Initials}}<span class="av s {{.Color}}">{{.Initials}}</span>{{end}}{{.Label}} <span class="c t">{{.Count}}</span></a>{{end}}</nav>{{end}}
+<nav class="seg segst" aria-label="Status">{{range .Data.StatusChips}}<a href="{{.Href}}"{{if .On}} class="on" aria-current="true"{{end}}>{{.Label}} <span class="c t">{{.Count}}</span></a>{{end}}</nav>
+</div>
+{{if not .Accounts}}{{template "noaccts"}}{{end}}
+{{with .Data.ReplyFlash}}{{if .Opened}}<div class="hint ok flash rflash" role="status" id="rflash">{{icon "ext"}}<span class="grow">Opened on X at <span class="t">{{.Opened}}</span>. Pressed Post on X? Mark it posted here. {{.Left}} left to review.</span><span class="rfa"><a class="btn pri" href="{{.MarkHref}}">{{icon "check"}}Mark posted</a><a class="btn" href="{{.ViewHref}}">View</a></span></div>{{else}}<div class="hint ok flash rflash" role="status" id="rflash">{{icon "check"}}<span class="grow">Approved. Open on X to post it. {{.Left}} left to review.</span><span class="rfa"><form method="post" action="/drafts/{{.ID}}/open-x" target="_blank" data-openx="{{.Intent}}"><input type="hidden" name="csrf" value="{{$.Data.CSRF}}"><input type="hidden" name="v" value="{{.V}}"><input type="hidden" name="return" value="{{$.Data.Return}}"><button class="btn pri">{{icon "ext"}}Open on X</button></form><a class="btn" href="{{.ViewHref}}">View</a></span></div>{{end}}{{end}}
+{{if .Data.TodayView}}<div class="hint neutral qnote" role="status">{{icon "info"}}<span>Nothing left to review. Showing what is approved, today first. <a href="/queue?status=pending">Show Pending</a></span></div>{{end}}
+{{with .Data.OneBlog}}<div class="hint neutral qnote oneblog" role="status">{{icon "info"}}<span>Showing only <b>{{brk .Name}}</b>. <a href="{{$.Data.AllBlogs}}">Show all blogs</a></span></div>{{end}}
+{{if or .Data.NPosting .Data.NFailed}}<div class="hint neutral qnote" role="status">{{icon "info"}}<span>Not in these tabs: {{if .Data.NPosting}}<a href="/log">{{.Data.NPosting}} posting</a>{{end}}{{if and .Data.NPosting .Data.NFailed}} and {{end}}{{if .Data.NFailed}}<a href="/log?status=failed">{{.Data.NFailed}} failed or needing review</a>{{end}}. Find {{if eq .Data.NHidden 1}}it{{else}}them{{end}} on the Log page.</span></div>{{end}}
+</div>
+<div class="lv" data-live-list="cards">
+{{range .Data.Cards}}{{if .Blog}}{{template "blogcard" .}}{{else if .Reply}}{{template "replycard" .}}{{else}}{{template "xcard" .}}{{end}}
+{{else}}
+<div class="empty">{{icon "info"}}<span>{{if eq .Data.Kind "blog"}}{{if eq .Data.Status "pending"}}No blog posts to review. New posts from agents land here.{{else if eq .Data.Status "posted"}}No published blog posts.{{else}}No {{.Data.Status}} blog posts.{{end}}{{else if eq .Data.Status "pending"}}Nothing to review. New drafts from agents land here.{{else}}No {{.Data.Status}} drafts.{{end}}</span></div>
+{{end}}
+{{if .Data.Cards}}<div class="empty mt10">{{icon "info"}}<span>End of queue. Agents propose drafts with their tokens; only you can approve, edit, reschedule or reject.</span></div>{{end}}
+</div>
+{{end}}
+
+{{define "xcard"}}{{/* cardView, X post; also nested under its blog card */}}{{$d := .D}}
+{{$rw := .RW}}{{$a := .Agent}}<article class="card qcard{{if .Nested}} qnest{{end}}{{if $rw}}{{if eq $rw.State "late"}} rwc-late{{else if or (eq $rw.State "waiting") (eq $rw.State "revised")}} rwc{{else if .Blocked}} warnc{{end}}{{else if .Blocked}} warnc{{end}}" id="d{{$d.ID}}">
+<div class="qmain">
+<div class="qhead">
+<span class="av {{.Acct.Color}}">{{.Acct.Initials}}</span>
+<div class="who"><div class="handle">@{{$d.Account}}</div>{{if .Nested}}<div class="src">Promo · <span class="t">{{.When.Day}} {{.When.Time}}</span>{{with .Promo}}{{if ne $d.Status "posted"}} · {{.Timing}}{{end}}{{end}}</div>{{else}}<div class="src">{{if $a}}<span class="agav s {{$a.Color}}" aria-hidden="true">{{$a.Initial}}</span>from {{$a.Name}}{{else if $d.TokenID}}from {{$d.Source}}{{else}}Written by you{{end}}<span class="rcv"> · {{if and $rw (eq $rw.State "revised") $rw.RevisedAt}}revised {{$rw.RevisedAt}}{{else}}received {{.Received}}{{end}}</span></div>{{end}}</div>
+<span class="pills">{{if and $rw (eq $rw.State "waiting")}}<span class="st rewriting">rewriting</span>{{else}}{{if and $rw (eq $rw.State "revised")}}<span class="st revised">{{icon "rewrite"}}revised by {{$a.Name}}</span>{{else if and $rw (eq $rw.State "late")}}<span class="st norw">no rewrite yet</span>{{end}}{{with .Promo}}{{if eq .State "waiting"}}<span class="st waitblog">waiting on blog</span>{{else if eq .State "held"}}<span class="st held">held</span>{{end}}{{end}}<span class="st {{$d.Status}}">{{$d.Status}}</span>{{end}}</span>
+<div class="qtime-m"><b class="t">{{.When.Time}}</b><span>{{.When.Day}}</span></div>
+</div>
+{{if and $rw (eq $rw.State "waiting")}}<div class="rwdim">{{template "fulltext" .Full}}</div>{{else}}{{template "fulltext" .Full}}{{end}}
+{{if .Posted}}<ul class="xlinks" aria-label="Live posts">{{range .Posted}}<li>{{if .Label}}<span class="xl">{{.Label}}</span>{{end}}{{if .XURL}}<a href="{{.XURL}}" target="_blank" rel="noopener noreferrer">View on X{{icon "ext"}}</a>{{else}}<span class="muted">No post id recorded</span>{{end}}{{if .StatsURL}}<a href="{{.StatsURL}}" target="_blank" rel="noopener noreferrer">View in xstats{{icon "ext"}}</a>{{end}}</li>{{end}}</ul>{{end}}
+<div class="chips">
+{{if not .Nested}}{{with .Promo}}<a class="chip promo" href="{{.Href}}"><span class="sa s {{.Color}}" aria-hidden="true">{{icon "doc"}}</span><span class="pt">Promotes: {{.Title}}</span></a>{{end}}{{end}}
+<span class="chip">{{icon "thread"}}{{.PartsLabel}}</span>
+{{if .Images}}<span class="chip">{{icon "img"}}{{.Images}} image{{if ne .Images 1}}s{{end}}</span>{{end}}
+{{if .HasURL}}<span class="chip">{{icon "link"}}Link</span>{{end}}
+<span class="chip cost-d">{{icon "dollar"}}est. {{.Cost}}</span>
+</div>
+{{if .Thumbs}}<div class="thumbs">{{range .Thumbs}}<img class="th" src="/media/{{.Ref}}" alt="{{if .Alt}}{{.Alt}}{{else}}Attached image{{end}}" width="64" height="64">{{end}}</div>{{end}}
+{{if $d.Note}}<div class="hint neutral mt10">{{icon "info"}}<span>Note from {{$d.Source}}: {{$d.Note}}</span></div>{{end}}
+{{with .Promo}}{{if or (eq .State "waiting") (eq .State "held")}}<div class="hint warn mt10" role="status">{{icon "hourglass"}}<span><b>{{if eq .State "held"}}Blog publish failed.{{else}}Waiting on blog.{{end}}</b> {{.Note}}</span></div>{{else if .Note}}<p class="tiny muted pnote">{{icon "info"}}<span>{{.Note}}</span></p>{{else if .Rejected}}<div class="hint bad mt10">{{icon "x"}}<span><b>Blog post rejected.</b> This promo won't post. Reject or delete it.</span></div>{{else if .Returned}}<div class="hint neutral mt10">{{icon "info"}}<span><b>Blog not live.</b> This promo came back to Pending. Approve it again to post it after the blog is live.</span></div>{{end}}{{end}}
+{{range .Conflicts}}<div class="hint {{if .Blocking}}warn{{else}}neutral{{end}}">{{icon "warn"}}<span>{{.Msg}}{{if .MoveLabel}} Next free slot: {{.MoveLabel}}.
+<form method="post" action="/drafts/{{$d.ID}}/reschedule"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><input type="hidden" name="date" value="{{.MoveDate}}"><input type="hidden" name="time" value="{{.MoveClock}}"><button class="linkbtn">Move to {{.MoveLabel}}</button></form>{{end}}</span></div>{{end}}
+{{template "rwboxes" .}}
+{{template "rwnote" .}}
+{{if and (eq $d.Status "rejected") $d.RejectReason}}<div class="hint bad reason">{{icon "x"}}<span>Reason (the agent can read this): {{$d.RejectReason}}</span></div>{{end}}
+</div>
+<div class="qside">
+<div class="prop"><div class="sect">{{if eq $d.Status "pending"}}Proposed{{else if eq $d.Status "approved"}}Scheduled{{else if eq $d.Status "posted"}}Posted{{else}}Was for{{end}}</div><div class="day">{{.When.Day}}</div><div class="tm t">{{.When.Time}} <span>{{.When.Zone}}</span></div>{{with .Promo}}{{if ne $d.Status "posted"}}<div class="tiny muted ptiming">{{.Timing}}</div>{{end}}{{end}}</div>
+<div class="acts{{if .CanRewrite}} rw{{end}}">
+{{if eq $d.Status "pending"}}<form class="apf" method="post" action="/drafts/{{$d.ID}}/approve"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn pri"{{if .Blocked}} disabled title="{{.Blocked}}"{{end}}>{{icon "check"}}Approve</button></form>{{end}}
+{{if or (eq $d.Status "pending") (eq $d.Status "approved")}}
+{{if and $rw (eq $rw.State "waiting")}}<span class="btn edb" aria-disabled="true" title="{{.Blocked}}"><span class="ic-d">{{icon "edit"}}</span>Edit</span>{{else}}<a class="btn edb" href="/drafts/{{$d.ID}}"><span class="ic-d">{{icon "edit"}}</span>Edit</a>{{end}}
+{{if .CanRewrite}}{{if .RwOff}}<span class="btn rwb dis" aria-disabled="true" title="{{.RwOff}}">{{icon "rewrite"}}Rewrite</span>{{else}}<a class="btn rwb{{if .RwOpen}} on{{end}}" href="{{.RwHref}}"{{if .RwOpen}} aria-expanded="true"{{end}}>{{icon "rewrite"}}Rewrite</a>{{end}}{{end}}
+<a class="btn rsb" href="/drafts/{{$d.ID}}/reschedule"><span class="ic-d">{{icon "clock"}}</span>Reschedule</a>
+<details class="rej"><summary class="btn danger"><span class="ic-d">{{icon "x"}}</span>Reject</summary>
+<form class="rejform" method="post" action="/drafts/{{$d.ID}}/reject"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}">
+{{if and $rw (eq $rw.State "waiting")}}<p class="tiny muted">Rejecting also cancels the rewrite request.</p>{{end}}<label class="small" for="reason{{$d.ID}}">Reason (optional, the agent can read it)</label><textarea id="reason{{$d.ID}}" name="reason" maxlength="500" rows="2"></textarea>
+<button class="btn danger" data-primary-submit>Reject draft</button></form></details>
+{{else if eq $d.Status "posted"}}
+<a class="btn" href="/drafts/{{$d.ID}}">View</a>
+{{else}}
+<form method="post" action="/drafts/{{$d.ID}}/delete" data-confirm="Delete this draft? This can't be undone."><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn danger">Delete</button></form>
+<a class="btn" href="/drafts/{{$d.ID}}">View</a>
+{{end}}
+</div>
+</div>
+</article>{{end}}
+
+{{define "rwboxes"}}{{/* cardView: the latest rewrite request on an X or blog card */}}{{$d := .D}}{{$rw := .RW}}{{$a := .Agent}}
+{{if $rw}}{{if eq $rw.State "waiting"}}<div class="rwbox wait" role="status"><span class="spin" aria-hidden="true"></span><div class="grow"><b>Waiting on {{$a.Name}}, sent {{$rw.Sent}}</b>{{if $rw.Note}}<div class="quote">{{$rw.Note}}</div>{{end}}
+<form method="post" action="/drafts/{{$d.ID}}/rewrite/cancel"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="linkbtn rwcancel">Cancel request</button></form></div></div>
+{{else if eq $rw.State "late"}}<div class="rwbox late" role="status">{{icon "hourglass"}}<div class="grow"><b>No rewrite yet.</b> {{$a.Name}} has not replied since {{$rw.Sent}} ({{$rw.Mins}} min). The draft is back in Pending and will not post unless you approve it.{{if $rw.Note}}<div class="quote">{{$rw.Note}}</div>{{end}}
+<div class="rwbtns">{{if not .RwOff}}<form method="post" action="/drafts/{{$d.ID}}/rewrite"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><input type="hidden" name="retry" value="1"><button class="btn">{{icon "retry"}}Retry</button></form>{{end}}<a class="btn" href="/drafts/{{$d.ID}}{{if .Blog}}/edit{{end}}">{{icon "edit"}}Edit it yourself</a></div></div></div>
+{{else if eq $rw.State "unchanged"}}<div class="hint neutral mt10" role="status">{{icon "info"}}<span><b>No changes from {{$a.Name}}.</b> The draft is Pending as it was.{{if $rw.Note}} Your note, sent {{$rw.Sent}}: {{$rw.Note}}{{end}}</span></div>
+{{else if eq $rw.State "revised"}}{{if $rw.Note}}<div class="rwsent">{{icon "send"}}<span><b>Your note to {{$a.Name}}</b> · sent {{$rw.Sent}}<br>{{$rw.Note}}</span></div>{{end}}
+{{with $rw.Prev}}<details class="rwprev" open><summary>{{icon "down"}}Previous version<span class="muted"> · from {{.From}}</span></summary>
+<div class="cmp{{if $.Blog}} cmpb{{end}}"><div class="col"><div class="ch">Previous · {{.PrevTime}}</div>{{template "fulltext" .Prev}}</div><div class="col crev"><div class="ch">Revised · {{.RevTime}}</div>{{template "fulltext" .Rev}}</div></div>
+<div class="cmpk"><span><i class="sw2 swadd"></i>Added</span><span><i class="sw2 swdel"></i>Removed</span></div></details>{{end}}{{end}}{{end}}
+{{if .RwHint}}<div class="hint neutral mt10">{{icon "info"}}<span>{{.RwHint}}{{if .RwLink}} <a href="{{$a.Settings}}"><b>{{.RwLink}}</b></a>{{end}}</span></div>{{end}}
+{{if .RwWarn}}<div class="hint warn mt10">{{icon "warn"}}<span>{{.RwWarn}}</span></div>{{end}}{{end}}
+
+{{define "rwnote"}}{{/* cardView: the Send back for a rewrite sheet */}}{{$d := .D}}{{$a := .Agent}}
+{{if .RwOpen}}<a class="rwscrim" href="{{.RwClose}}" aria-label="Close"></a><form class="rwnote" id="rw{{$d.ID}}" method="post" action="/drafts/{{$d.ID}}/rewrite" role="dialog" aria-labelledby="rwt{{$d.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}">
+<span class="grab" aria-hidden="true"></span><div class="row"><h3 class="grow" id="rwt{{$d.ID}}">Send back for a rewrite</h3><a class="ib rwx" href="{{.RwClose}}" aria-label="Close">{{icon "x"}}</a></div>
+<div class="to">Goes to <span class="agav s {{$a.Color}}" aria-hidden="true">{{$a.Initial}}</span><b>{{$a.Name}}</b><span class="muted"> · the agent that wrote this draft</span></div>
+{{if .Blog}}<div class="ctx">{{template "blogav" .Blog.B}}<span class="grow">{{.Blog.B.Name}} · /{{.Blog.P.Slug}}</span><span class="t">{{.When.Day}} {{.When.Time}}</span></div>{{else}}<div class="ctx"><span class="av s {{.Acct.Color}}">{{.Acct.Initials}}</span><span class="grow">@{{$d.Account}} · {{.PartsLabel}}</span><span class="t">{{.When.Day}} {{.When.Time}}</span></div>{{end}}
+<label class="f" for="note{{$d.ID}}">Note for {{$a.Name}} <span class="muted">(optional)</span></label><textarea id="note{{$d.ID}}" name="note" rows="3" maxlength="280" placeholder="e.g. punchier, drop the second sentence" data-count="rwc{{$d.ID}}" autofocus></textarea>
+<div class="row rwhelp"><span class="tiny muted grow">{{if .Blog}}{{$a.Name}} gets the full post and your note. The slug and cover stay. The new version comes back to Pending.{{else}}{{$a.Name}} gets the full draft and your note. The new version comes back to Pending.{{end}}</span><span class="tiny muted t" id="rwc{{$d.ID}}">0 / 280</span></div>
+<div class="row rwact"><span class="kbdhint" data-kbd-hint="to send" hidden>Ctrl+Enter to send</span><a class="btn" href="{{.RwClose}}">Cancel</a><button class="btn pri" data-primary-submit>{{icon "send"}}Send for rewrite</button></div></form>{{end}}{{end}}
+
+{{define "replycard"}}{{/* cardView with Reply: a reply the owner posts by hand on x.com */}}{{$d := .D}}{{$rp := .Reply}}{{$rw := .RW}}{{$a := .Agent}}
+<article class="card qcard rcard{{if .Blocked}} warnc{{end}}" id="d{{$d.ID}}">
+<div class="qmain">
+<div class="qhead">
+<span class="av {{.Acct.Color}}">{{.Acct.Initials}}</span>
+<div class="who"><div class="handle">@{{$d.Account}} <span class="kp">{{icon "reply"}}Reply</span></div><div class="src">{{if $a}}<span class="agav s {{$a.Color}}" aria-hidden="true">{{$a.Initial}}</span>from {{$a.Name}}{{else if $d.TokenID}}from {{$d.Source}}{{else}}Written by you{{end}}<span class="rcv"> · {{if and $rw (eq $rw.State "revised") $rw.RevisedAt}}revised {{$rw.RevisedAt}}{{else}}received {{.Received}}{{end}}</span></div></div>
+<span class="pills">{{if and $rw (eq $rw.State "waiting")}}<span class="st rewriting">rewriting</span>{{else}}<span class="st {{$d.Status}}">{{$d.Status}}</span>{{if $rp.Opened}}<span class="st opened">{{if $rp.NotMarked}}not marked yet{{else}}opened on X{{end}}</span>{{end}}{{end}}</span>
+</div>
+{{template "replyquote" $rp}}
+<div class="rfrom">Replying from <span class="av s {{.Acct.Color}}">{{.Acct.Initials}}</span><b>@{{$d.Account}}</b></div>
+<div class="rtx{{if and $rw (eq $rw.State "waiting")}} rwdim{{end}}">{{$rp.Keep}}{{if $rp.Extra}}<span class="ov">{{$rp.Extra}}</span>{{end}}</div>
+<div class="chips"><span class="chip t{{if $rp.Over}} bad{{end}}">{{$rp.Count}} / 280</span><span class="chip">{{icon "out"}}Posts by hand on X</span><span class="chip t">{{icon "dollar"}}$0 API</span></div>
+{{if $d.Note}}<div class="hint neutral mt10">{{icon "info"}}<span>Note from {{$d.Source}}: {{$d.Note}}</span></div>{{end}}
+{{if eq $d.Status "pending"}}{{if $rp.Over}}<div class="hint bad mt10">{{icon "warn"}}<span><b>{{$rp.Over}} over the 280 limit.</b> Shorten it in Edit{{if $a}}, or ask {{$a.Name}} to rewrite it{{end}}.</span></div>{{end}}
+{{range $rp.Lint}}<div class="hint {{if .Blocks}}bad{{else}}warn{{end}} mt10">{{icon "warn"}}<span>{{.Msg}}{{if .Hit}} <span class="quote">{{.Before}}<mark>{{.Hit}}</mark>{{.After}}</span>{{end}}</span></div>{{end}}{{end}}
+{{if or (eq $d.Status "pending") (eq $d.Status "approved")}}{{range $rp.Warns}}<div class="hint warn mt10">{{icon "warn"}}<span>{{.}}</span></div>{{end}}{{end}}
+{{if eq $d.Status "approved"}}{{if not $rp.Opened}}<div class="hbox" id="handoff{{$d.ID}}"><div class="ttl">{{icon "check"}}<span>Approved. Post it on X yourself.</span></div>
+<p>xpost opens x.com in a new tab with this reply filled in{{if $rp.Handle}}, under @{{$rp.Handle}}'s post{{end}}. Check it and press Post there.</p>
+<div class="bts"><form method="post" action="/drafts/{{$d.ID}}/open-x" target="_blank" data-openx="{{$rp.IntentURL}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn pri">{{icon "ext"}}Open on X to post</button></form>
+<label class="vh" for="copy{{$d.ID}}">Reply text</label><textarea class="vh" id="copy{{$d.ID}}" readonly tabindex="-1">{{$rp.Body}}</textarea><button type="button" class="btn" data-copy="copy{{$d.ID}}">{{icon "copy"}}Copy text</button></div></div>
+{{else}}<div class="hbox {{if $rp.NotMarked}}stale{{else}}op{{end}}" id="handoff{{$d.ID}}"><div class="ttl">{{if $rp.NotMarked}}{{icon "hourglass"}}<span>Not marked yet</span>{{else}}{{icon "ext"}}<span>Opened on X at <span class="t">{{$rp.Opened}}</span></span>{{end}}</div>
+<p>{{if $rp.NotMarked}}Opened on X {{$rp.OpenedDay}} at {{$rp.Opened}}, over a day ago. Did you post it? Mark it posted, open X again, or put it back in the queue.{{else}}Pressed Post on X? Mark it posted here so the log stays right. xpost cannot see what happens on X.{{end}}</p>
+<div class="bts"><a class="btn pri" href="{{$rp.MarkHref}}">{{icon "check"}}Mark posted</a>
+<form method="post" action="/drafts/{{$d.ID}}/open-x" target="_blank" data-openx="{{$rp.IntentURL}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn">{{icon "ext"}}Open on X again</button></form>
+<form method="post" action="/drafts/{{$d.ID}}/unapprove"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn">{{icon "back"}}Put back in queue</button></form></div></div>{{end}}{{end}}
+{{if eq $d.Status "posted"}}<p class="rposted small">@{{$d.Account}} · in reply to {{if $rp.Handle}}@{{$rp.Handle}}{{else}}post {{$rp.R.InReplyTo}}{{end}} · Posted by you on X · <span class="t">{{$rp.Posted}}</span></p>
+{{if $rp.R.PostedURL}}<ul class="xlinks" aria-label="Live post"><li><a href="{{$rp.R.PostedURL}}" target="_blank" rel="noopener noreferrer">View on X{{icon "ext"}}</a></li></ul>{{else}}<p class="tiny muted">Posted manually, no link</p>{{end}}{{end}}
+{{template "rwboxes" .}}
+{{template "rwnote" .}}
+{{if $rp.MarkOpen}}{{template "markposted" .}}{{end}}
+{{if and (eq $d.Status "rejected") $d.RejectReason}}<div class="hint bad reason">{{icon "x"}}<span>Reason (the agent can read this): {{$d.RejectReason}}</span></div>{{end}}
+</div>
+<div class="qside">
+<div class="prop rprop">{{if eq $d.Status "pending"}}<div class="sect">Posts</div><div class="wt">By hand on X</div><div class="hand">Approve opens x.com with this reply filled in. You press Post there.</div>
+{{else if eq $d.Status "approved"}}<div class="sect">Approved</div>{{if $rp.NotMarked}}<div class="wt">Not marked yet</div><div class="hand">Opened {{$rp.OpenedDay}}, {{$rp.Opened}}. It stays here until you mark it.</div>{{else if $rp.Opened}}<div class="wt">Opened on X</div><div class="hand">Opened <span class="t">{{$rp.Opened}}</span>. Waiting for you to mark it.</div>{{else}}<div class="wt">Ready for X</div><div class="hand">Approved{{if $rp.Approved}} <span class="t">{{$rp.Approved}}</span>{{end}}. Use Open on X to post when you are ready.</div>{{end}}
+{{else if eq $d.Status "posted"}}<div class="sect">Posted</div><div class="wt">By you on X</div><div class="hand t">{{$rp.Posted}}</div>
+{{else}}<div class="sect">Reply</div><div class="wt">{{$d.Status}}</div>{{end}}</div>
+<div class="acts{{if .CanRewrite}} rw{{end}}">
+{{if eq $d.Status "pending"}}<form class="apf" method="post" action="/drafts/{{$d.ID}}/approve"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn pri"{{if .Blocked}} disabled title="{{.Blocked}}"{{end}}>{{icon "check"}}Approve</button></form>
+{{if and $rw (eq $rw.State "waiting")}}<span class="btn edb" aria-disabled="true" title="{{.Blocked}}"><span class="ic-d">{{icon "edit"}}</span>Edit</span>{{else}}<a class="btn edb" href="/drafts/{{$d.ID}}"><span class="ic-d">{{icon "edit"}}</span>Edit</a>{{end}}
+{{if .CanRewrite}}{{if .RwOff}}<span class="btn rwb dis" aria-disabled="true" title="{{.RwOff}}">{{icon "rewrite"}}Rewrite</span>{{else}}<a class="btn rwb{{if .RwOpen}} on{{end}}" href="{{.RwHref}}"{{if .RwOpen}} aria-expanded="true"{{end}}>{{icon "rewrite"}}Rewrite</a>{{end}}{{end}}
+<details class="rej"><summary class="btn danger"><span class="ic-d">{{icon "x"}}</span>Reject</summary>
+<form class="rejform" method="post" action="/drafts/{{$d.ID}}/reject"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}">
+{{if and $rw (eq $rw.State "waiting")}}<p class="tiny muted">Rejecting also cancels the rewrite request.</p>{{end}}<label class="small" for="reason{{$d.ID}}">Reason (optional, the agent can read it)</label><textarea id="reason{{$d.ID}}" name="reason" maxlength="500" rows="2"></textarea>
+<button class="btn danger" data-primary-submit>Reject reply</button></form></details>
+{{if .Blocked}}<p class="tiny why rwhy">{{.Blocked}}</p>{{end}}
+{{else if eq $d.Status "approved"}}{{if not $rp.Opened}}<a class="btn edb" href="/drafts/{{$d.ID}}"><span class="ic-d">{{icon "edit"}}</span>Edit</a>
+<form method="post" action="/drafts/{{$d.ID}}/unapprove"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn">{{icon "back"}}Unapprove</button></form>{{end}}
+{{else if eq $d.Status "posted"}}<a class="btn" href="/drafts/{{$d.ID}}">View</a>
+{{else}}<form method="post" action="/drafts/{{$d.ID}}/delete" data-confirm="Delete this reply? This can't be undone."><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$.Ret}}"><button class="btn danger">Delete</button></form>
+<a class="btn" href="/drafts/{{$d.ID}}">View</a>{{end}}
+</div>
+</div>
+</article>{{end}}
+
+{{define "markposted"}}{{/* cardView with Reply: the Mark posted dialog */}}{{$d := .D}}{{$rp := .Reply}}
+<a class="rwscrim mpscrim" href="{{$rp.MarkClose}}" aria-label="Close"></a><form class="mpdlg" id="mp{{$d.ID}}" method="post" action="/drafts/{{$d.ID}}/mark-posted" role="dialog" aria-modal="true" aria-labelledby="mpt{{$d.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="v" value="{{$d.Version}}"><input type="hidden" name="return" value="{{$rp.MarkClose}}">
+<span class="grab" aria-hidden="true"></span><h3 id="mpt{{$d.ID}}">Mark as posted</h3>
+<div class="ctx2"><span class="av s {{.Acct.Color}}">{{.Acct.Initials}}</span><span class="grow">Reply to {{if $rp.Handle}}@{{$rp.Handle}}{{else}}post {{$rp.R.InReplyTo}}{{end}} · opened <span class="t">{{$rp.Opened}}</span></span></div>
+<label class="fl2" for="link{{$d.ID}}">Link to your reply <span class="muted">(optional)</span></label>
+<input class="uf{{if $rp.MarkErr}} bad{{end}}" type="url" inputmode="url" id="link{{$d.ID}}" name="link" value="{{$rp.MarkVal}}" placeholder="x.com/{{$d.Account}}/status/..." autocomplete="off" spellcheck="false"{{if $rp.MarkErr}} aria-invalid="true" aria-describedby="mpe{{$d.ID}}"{{end}} autofocus>
+{{if $rp.MarkErr}}<div class="vm bad" id="mpe{{$d.ID}}" role="alert">{{icon "warn"}}<span>{{$rp.MarkErr}}</span></div>{{else}}<div class="vm">{{icon "info"}}<span>A post link from @{{$d.Account}}. xpost checks the format only.</span></div>{{end}}
+<p class="help">Leave it empty if you do not have the link. The log will say "Posted manually, no link".</p>
+<div class="mrow"><a class="btn" href="{{$rp.MarkClose}}">Cancel</a><button class="btn pri">{{icon "check"}}Mark posted</button></div></form>{{end}}

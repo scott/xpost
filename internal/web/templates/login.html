@@ -1,0 +1,10 @@
+{{define "content"}}<div class="steps" aria-hidden="true"><span class="on"></span><span></span></div>
+<h1>Sign in</h1><p class="muted small">Step 1 of 2: your password. Then your passkey.</p>
+<form method="post" action="/login">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+<label class="f" for="email">Email</label><input type="email" id="email" name="email" value="{{.Data.Email}}" autocomplete="username" required autofocus>
+<label class="f" for="password">Password</label><input type="password" id="password" name="password" autocomplete="current-password" required>
+<button class="btn pri">Continue</button>
+</form>
+{{if not .Data.Passkeys}}<div class="hint warn mt14">{{icon "warn"}}<span>Passkeys need https or http://localhost. Sign-in can't finish on this address.</span></div>{{end}}
+{{end}}

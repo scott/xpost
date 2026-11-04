@@ -1,0 +1,42 @@
+{{define "content"}}{{$d := .Data.D}}{{$b := .Data.BV}}{{$e := .Data.E}}
+<a class="crumb crumb-d" href="/drafts/{{$d.ID}}">{{icon "back"}}Preview</a>
+<div class="ph keep"><div class="grow"><div class="row"><h1>Edit blog post</h1><span class="st {{$b.St}}">{{$b.St}}</span></div><div class="sub">{{$b.B.Name}} · {{.Data.Source}} · version {{$d.Version}}</div></div></div>
+<form method="post" action="/drafts/{{$d.ID}}/edit" id="bedit"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="v" value="{{.Data.V}}">
+<button class="vh" name="op" value="save" tabindex="-1" aria-hidden="true">Save</button>
+<div class="beg">
+<div class="bemain">
+<section class="card pad">
+<label class="f" for="title">Title</label><textarea id="title" name="title" class="oneline" rows="2" maxlength="200" required{{if not .Data.Editable}} disabled{{end}}>{{$e.Title}}</textarea>
+<label class="f mt12" for="description">Description <span class="muted">(one line)</span></label><textarea id="description" name="description" class="oneline" rows="2" maxlength="1000" required{{if not .Data.Editable}} disabled{{end}}>{{$e.Description}}</textarea>
+<label class="f mt12" for="slug">Slug</label>{{if $b.P.Staged}}<input type="text" id="slug" class="kbd" value="/{{$e.Slug}}" readonly aria-describedby="slugh"><input type="hidden" name="slug" value="{{$e.Slug}}">{{else}}<input type="text" id="slug" name="slug" class="kbd" maxlength="81" value="/{{$e.Slug}}" autocapitalize="none" spellcheck="false" aria-describedby="slugh" required{{if not .Data.Editable}} disabled{{end}}>{{end}}
+<div class="tiny muted mt6" id="slugh">{{if $b.P.Staged}}Locked: this post is staged on {{$b.B.Name}}.{{else}}Lowercase letters, digits and hyphens. Locked once the post is staged on {{$b.B.Name}}.{{end}}</div>
+<label class="f mt12" for="tags">Tags <span class="muted">(comma separated)</span></label><input type="text" id="tags" name="tags" maxlength="500" value="{{.Data.Tags}}"{{if not .Data.Editable}} disabled{{end}}>
+</section>
+<section class="card pad mt12">
+<div class="row"><h2 class="grow">Body (Markdown)</h2><span class="chip {{$b.LintClass}}">{{if eq $b.LintClass "ok2"}}{{icon "check"}}{{else}}{{icon "warn"}}{{end}}{{$b.LintLabel}}</span></div>
+<div class="seg wseg mt10" role="group" aria-label="Body view"><button name="op" value="write" formnovalidate{{if not .Data.Preview}} class="on" aria-pressed="true"{{end}}>Write</button><button name="op" value="preview" formnovalidate{{if .Data.Preview}} class="on" aria-pressed="true"{{end}}>Preview</button></div>
+{{if .Data.Preview}}<input type="hidden" name="markdown" value="{{$e.Markdown}}"><div class="pvb bepv">{{.Data.Body}}</div>
+{{else}}<textarea id="markdown" name="markdown" class="kbd mdin" rows="16" aria-label="Body (Markdown)"{{if not .Data.Editable}} disabled{{end}}>{{$e.Markdown}}</textarea>{{end}}
+<div class="row tiny muted mt6"><span class="grow">Do not start with a # title; the title field is used.</span><span class="t">{{$b.Words}}</span></div>
+{{if $b.Findings}}<div class="lint{{if not $b.NErr}} lwarn{{end}}"><h4>{{icon "warn"}}{{$b.LintHead}}</h4>
+{{range $b.Findings}}<div class="lf"><span class="lsev {{.Sev}}">{{.Label}}</span><div class="grow">{{.Msg}}<span class="lq">{{.Before}}<mark{{if eq .Sev "w"}} class="w"{{end}}>{{.Hit}}</mark>{{.After}}</span></div></div>{{end}}</div>{{end}}
+</section>
+</div>
+<aside class="beside">
+<section class="card pad"><h2>Cover</h2>
+{{if $b.P.Cover}}<div class="becov">{{template "blogcover" $b}}</div>
+<label class="f mt10" for="cover_alt">Alt text{{if $b.B.CoverAltRequired}} <span class="req">Required for {{$b.B.Name}}</span>{{end}}</label><textarea id="cover_alt" name="cover_alt" rows="2" maxlength="1000"{{if not .Data.Editable}} disabled{{end}}>{{$e.CoverAlt}}</textarea>
+<div class="tiny muted mt6">The cover cannot be changed by a rewrite.</div>
+{{else}}<p class="small muted mt6">No cover. The agent sends one with the post.</p>{{end}}
+</section>
+<section class="card pad mt12"><h2>Publish</h2>
+<div class="when-in mt10"><div><label class="f" for="date">Date</label><input type="date" id="date" name="date" value="{{.Data.When.Date}}"{{if not .Data.Editable}} disabled{{end}}></div>
+<div><label class="f" for="time">Time</label><input type="time" id="time" name="time" step="900" value="{{.Data.When.Clock}}"{{if not .Data.Editable}} disabled{{end}}></div></div>
+<div class="tiny muted mt6">{{if .Data.UTCNote}}{{.Data.UTCNote}}{{else}}{{.Data.ZoneName}} ({{.Data.When.Zone}}){{end}}</div>
+</section>
+</aside>
+</div>
+{{if .Data.Editable}}<div class="card pad bebar mt12"><span class="grow"></span><span class="kbdhint" data-kbd-hint="to save" hidden>Ctrl+Enter to save</span><a class="btn" href="/drafts/{{$d.ID}}">Cancel</a><button class="btn pri" name="op" value="save" data-primary-submit>{{icon "check"}}Save</button></div>
+<div class="tiny muted ta-r mt6">Saving keeps it in Pending. Editing an approved post sends it back to Pending.</div>{{end}}
+</form>
+{{end}}
