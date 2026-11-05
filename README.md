@@ -16,6 +16,12 @@ at their scheduled time through your own X developer app.
 
 License: MIT. See [LICENSE](LICENSE).
 
+## Screenshot
+
+![Review queue with sample data](docs/images/queue-desktop.png)
+
+The review queue, from a local demo with sample data. Nothing here is a real X account or post.
+
 ## Quickstart: local demo
 
 The demo runs on your machine with invented data and a fake X. It never
