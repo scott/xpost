@@ -107,7 +107,12 @@ case "$tz" in *[[:space:]=]*) die "invalid zone: $tz" ;; esac
 command -v systemctl >/dev/null || die "systemd (systemctl) is required"
 grep -qE '^ID(_LIKE)?=.*(ubuntu|debian)' /etc/os-release 2>/dev/null || say "warning: not Ubuntu or Debian; continuing"
 
-script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# When this script is piped into bash, BASH_SOURCE is empty and dirname
+# would land on the current directory. Only trust a real on-disk path.
+script_dir=
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+	script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -149,7 +154,7 @@ if [ -n "$tz" ]; then # checked with this binary before anything is installed
 	tzerr=$(XPOST_KEY=$("$tmp/xpost" keygen) "$tmp/xpost" create-owner -db "$tmp/tzcheck.db" -email check@example.invalid -name check -tz "$tz" 2>&1 >/dev/null) || die "invalid --tz $tz: $tzerr"
 	rm -f "$tmp"/tzcheck.db*
 fi
-if [ -z "$env_example" ] && [ -f "$script_dir/../.env.example" ]; then env_example=$script_dir/../.env.example; fi
+if [ -z "$env_example" ] && [ -n "$script_dir" ] && [ -f "$script_dir/../.env.example" ]; then env_example=$script_dir/../.env.example; fi
 if [ -z "$env_example" ]; then
 	[ -f "$tmp/SHA256SUMS" ] || download "${release_url%/}/SHA256SUMS" "$tmp/SHA256SUMS"
 	download "${release_url%/}/xpost.env.example" "$tmp/env.example"

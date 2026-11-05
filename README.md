@@ -106,19 +106,20 @@ You need an Ubuntu (or Debian) server with systemd, a DNS name pointing at
 it, and ports 80 and 443 open. Passkeys need https; the installer sets up
 Caddy for that.
 
-1. Copy `deploy/bootstrap.sh` to the server (and `.env.example` if you
-   install from a checkout), then run it as root:
+1. On the server, run:
 
    ```sh
-   sudo bash bootstrap.sh --domain xpost.example.com --email you@example.com --owner-email you@example.com
+   curl -fsSL https://raw.githubusercontent.com/scott/xpost/main/scripts/install.sh \
+     | sudo bash -s -- --domain xpost.example.com --email you@example.com --owner-email you@example.com
    ```
 
-   It creates the `xpost` user, generates the master key once, writes
-   `/etc/xpost/env` from `.env.example`, installs the systemd unit and a Caddy
-   site, starts both, checks `/healthz`, and prints the owner's one-time
-   setup link. Without `--binary FILE` it downloads the release binary for
-   your CPU and checks it against `SHA256SUMS`. Re-running it is safe. Run
-   `bash bootstrap.sh --help` for every option.
+   That downloads `bootstrap.sh` from the latest release, checks it against
+   `SHA256SUMS`, then runs it. It creates the `xpost` user, generates the
+   master key once, writes `/etc/xpost/env`, installs the systemd unit and a
+   Caddy site, starts both, checks `/healthz`, and prints the owner's
+   one-time setup link. Re-running it is safe. Pass `--help` after `--` for
+   every option. From a checkout you can still run
+   `sudo bash deploy/bootstrap.sh ...` instead.
 
 2. Open the setup link. Set a password and add a passkey.
 

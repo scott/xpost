@@ -2,13 +2,14 @@
 
 You need an Ubuntu (or Debian) server with systemd, a DNS name pointing at it, and ports 80 and 443 open.
 
-1. Copy `deploy/bootstrap.sh` to the server, and also `.env.example` if you are installing from a checkout. Then run it as root:
+1. On the server, run:
 
    ```
-   sudo bash bootstrap.sh --domain post.example.com --email you@example.com --owner-email you@example.com
+   curl -fsSL https://raw.githubusercontent.com/scott/xpost/main/scripts/install.sh \
+     | sudo bash -s -- --domain post.example.com --email you@example.com --owner-email you@example.com
    ```
 
-   Without `--binary FILE`, it downloads the release binary for your CPU (`xpost-linux-amd64` or `arm64`) and checks it against `SHA256SUMS`. `XPOST_RELEASE_URL` or `--release-url` changes where it downloads from.
+   That downloads `bootstrap.sh` from the latest release, checks it against `SHA256SUMS`, then runs it. Without `--binary FILE`, bootstrap downloads the release binary for your CPU (`xpost-linux-amd64` or `arm64`) and checks it too. `XPOST_RELEASE_URL` or `--release-url` changes where it downloads from. From a checkout you can still run `sudo bash deploy/bootstrap.sh ...` instead.
 
 2. Open the one-time setup link it prints. Set a password and add a passkey.
 
