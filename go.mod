@@ -2,6 +2,8 @@ module github.com/scott/xpost
 
 go 1.27.3
 
+toolchain go1.27.4
+
 require (
 	github.com/go-webauthn/webauthn v0.18.2
 	github.com/microcosm-cc/bluemonday v1.0.27
